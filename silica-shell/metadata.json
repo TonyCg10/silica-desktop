@@ -1,0 +1,6 @@
+{
+    "name": "silica-shell",
+    "id": "org.silica.shell",
+    "version": "0.1.0",
+    "main": "shell.qml"
+}
