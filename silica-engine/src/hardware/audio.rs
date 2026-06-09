@@ -45,6 +45,8 @@ fn _parse_pactl_list(kind: &str) -> Vec<AudioDevice> {
     let mut current_name = String::new();
     let mut current_desc = String::new();
     let mut current_node_id: u32 = 0;
+    let mut current_vol: f64 = 1.0;
+    let mut current_mute: bool = false;
     let mut in_entry = false;
 
     for line in output.lines() {
@@ -53,22 +55,43 @@ fn _parse_pactl_list(kind: &str) -> Vec<AudioDevice> {
                 devices.push(AudioDevice {
                     nombre: current_name.clone(),
                     descripcion: current_desc.clone(),
-                    volumen: 1.0,
-                    mute: false,
+                    volumen: current_vol,
+                    mute: current_mute,
                     predeterminado: false,
                     node_id: current_node_id,
                 });
             }
             current_name.clear();
             current_desc.clear();
+            current_vol = 1.0;
+            current_mute = false;
             let rest = if line.starts_with("Sink #") { &line[6..] } else if line.starts_with("Source #") { &line[8..] } else { "" };
             current_node_id = rest.split_whitespace().next().and_then(|s| s.parse().ok()).unwrap_or(0);
             in_entry = true;
         } else if in_entry {
-            if let Some(val) = line.trim().strip_prefix("Name:") {
+            let trimmed = line.trim();
+            if let Some(val) = trimmed.strip_prefix("Name:") {
                 current_name = val.trim().to_string();
-            } else if let Some(val) = line.trim().strip_prefix("Description:") {
+            } else if let Some(val) = trimmed.strip_prefix("Description:") {
                 current_desc = val.trim().to_string();
+            } else if let Some(val) = trimmed.strip_prefix("Mute:") {
+                current_mute = val.trim() == "yes";
+            } else if let Some(val) = trimmed.strip_prefix("Volume:") {
+                if let Some(pct_pos) = val.find('%') {
+                    let mut start = pct_pos;
+                    while start > 0 {
+                        let prev_char = val.chars().nth(start - 1).unwrap();
+                        if prev_char.is_ascii_digit() || prev_char == ' ' {
+                            start -= 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    let num_str = val[start..pct_pos].trim();
+                    if let Ok(pct) = num_str.parse::<u32>() {
+                        current_vol = (pct as f64) / 100.0;
+                    }
+                }
             }
         }
     }
@@ -77,8 +100,8 @@ fn _parse_pactl_list(kind: &str) -> Vec<AudioDevice> {
         devices.push(AudioDevice {
             nombre: current_name.clone(),
             descripcion: current_desc.clone(),
-            volumen: 1.0,
-            mute: false,
+            volumen: current_vol,
+            mute: current_mute,
             predeterminado: false,
             node_id: current_node_id,
         });
@@ -87,29 +110,12 @@ fn _parse_pactl_list(kind: &str) -> Vec<AudioDevice> {
     devices
 }
 
-fn _set_volumen_actual_mute(devices: &mut Vec<AudioDevice>) {
-    for dev in devices {
-        let output = Command::new("wpctl")
-            .args(["get-volume", &dev.node_id.to_string()])
-            .output()
-            .ok()
-            .and_then(|o| String::from_utf8(o.stdout).ok())
-            .unwrap_or_default();
-        let parts: Vec<&str> = output.split_whitespace().collect();
-        if let Some(vol_str) = parts.get(1) {
-            dev.volumen = vol_str.parse().unwrap_or(1.0);
-        }
-        dev.mute = output.contains("MUTED");
-    }
-}
-
 pub fn leer_audio() -> (Vec<AudioDevice>, Vec<AudioDevice>, f64, bool) {
     let default_sink = _default_device_name("sink");
     let default_source = _default_device_name("source");
 
     let mut salidas = _parse_pactl_list("sinks");
     let mut entradas = _parse_pactl_list("sources");
-    _set_volumen_actual_mute(&mut salidas);
 
     for dev in &mut salidas {
         dev.predeterminado = dev.nombre == default_sink;

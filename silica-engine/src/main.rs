@@ -8,6 +8,7 @@ mod icons;
 mod cmd;
 mod wifi;
 mod hardware;
+mod bluetooth;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

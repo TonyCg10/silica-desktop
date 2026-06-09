@@ -27,6 +27,14 @@ pub struct AudioDevice {
     pub node_id: u32,
 }
 
+#[derive(Serialize, Clone, Default)]
+pub struct BtDevice {
+    pub mac: String,
+    pub name: String,
+    pub connected: bool,
+    pub paired: bool,
+}
+
 #[derive(Serialize)]
 pub struct SilicaEvent {
     pub hora: String,
@@ -35,12 +43,19 @@ pub struct SilicaEvent {
     pub ventana_titulo: String,
     pub ventana_clase: String,
     pub ventana_icono: String,
-    pub redes: Vec<RedInfo>,
-    pub brillo: Vec<BrilloInfo>,
-    pub audio_salidas: Vec<AudioDevice>,
-    pub audio_entradas: Vec<AudioDevice>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub redes: Option<Vec<RedInfo>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub brillo: Option<Vec<BrilloInfo>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub audio_salidas: Option<Vec<AudioDevice>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub audio_entradas: Option<Vec<AudioDevice>>,
     pub volumen_actual: f64,
     pub volumen_mute: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bluetooth_devices: Option<Vec<BtDevice>>,
+    pub bt_power_on: bool,
 }
 
 pub struct SilicaState {
@@ -53,6 +68,16 @@ pub struct SilicaState {
     pub redes_gen: u64,
     pub brillo: Vec<BrilloInfo>,
     pub brillo_gen: u64,
+    pub audio_salidas: Vec<AudioDevice>,
+    pub audio_entradas: Vec<AudioDevice>,
+    pub volumen_actual: f64,
+    pub volumen_mute: bool,
+    pub audio_gen: u64,
+    pub bateria: i32,
+    pub bateria_gen: u64,
+    pub bluetooth_devices: Vec<BtDevice>,
+    pub bt_power_on: bool,
+    pub bluetooth_gen: u64,
 }
 
 impl SilicaState {
@@ -67,6 +92,16 @@ impl SilicaState {
             redes_gen: 0,
             brillo: Vec::new(),
             brillo_gen: 0,
+            audio_salidas: Vec::new(),
+            audio_entradas: Vec::new(),
+            volumen_actual: 0.0,
+            volumen_mute: false,
+            audio_gen: 0,
+            bateria: 100,
+            bateria_gen: 0,
+            bluetooth_devices: Vec::new(),
+            bt_power_on: false,
+            bluetooth_gen: 0,
         }
     }
 }

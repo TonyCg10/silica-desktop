@@ -20,6 +20,8 @@ ShellRoot {
     property var audioEntradas: []
     property real volumenActual: 0.75
     property bool volumenMute: false
+    property var bluetoothDevices: []
+    property bool btPowerOn: false
 
     Socket {
         id: silicaEngineSocket
@@ -43,6 +45,8 @@ ShellRoot {
                     if (datos.audio_entradas)root.audioEntradas = datos.audio_entradas;
                     if (datos.volumen_actual !== undefined) root.volumenActual = datos.volumen_actual;
                     if (datos.volumen_mute   !== undefined) root.volumenMute   = datos.volumen_mute;
+                    if (datos.bluetooth_devices) root.bluetoothDevices = datos.bluetooth_devices;
+                    if (datos.bt_power_on !== undefined) root.btPowerOn = datos.bt_power_on;
                 } catch(e) { console.log("Error parseando JSON:", e); }
             }
         }
@@ -97,6 +101,8 @@ ShellRoot {
                     modelAudioEntradas: root.audioEntradas
                     volumenActual: root.volumenActual
                     volumenMute: root.volumenMute
+                    modelBluetoothDevices: root.bluetoothDevices
+                    btPowerOn: root.btPowerOn
                     screenGeometry: Qt.rect(modelData.x, modelData.y, modelData.width, modelData.height)
                     panelWindow: panelWin
                 }

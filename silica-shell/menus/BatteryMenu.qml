@@ -22,7 +22,7 @@ Item {
         anchor.rect.x: screenGeometry.width - width - 24
         anchor.rect.y: 54
 
-        HoverHandler { onHoveredChanged: root.popupHoverChanged(hovered) }
+        HoverHandler { onHoveredChanged: { if (root.menuOpen) root.popupHoverChanged(hovered) } }
 
         Rectangle {
             anchors.fill: parent

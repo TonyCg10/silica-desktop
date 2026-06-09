@@ -12,22 +12,30 @@ Item {
     signal closeRequested()
     signal popupHoverChanged(bool hovered)
 
-    property bool btPowerOn: true
-    property bool btScanning: false
+    required property bool btPowerOn
+    required property var modelBluetoothDevices
+
+    property bool btScanning: btScanProc.running
     property bool btAutoScan: false
     property string btConnectingMAC: ""
-    property var btDeviceCache: []
-    property bool btRefreshAborted: false
     property var btPrevMACs: []
+    property bool _destroying: false
+    property real lastScanTime: 0
+
+    Component.onDestruction: { _destroying = true }
+
     ListModel { id: btModel }
     ListModel { id: btNewDevicesModel }
 
+    onModelBluetoothDevicesChanged: syncBtModel()
+
     onMenuOpenChanged: {
-        if (menuOpen) { btRefresh(); btAutoScanStart() }
+        if (menuOpen) { syncBtModel(); btAutoScanStart() }
     }
 
     function syncBtModel() {
-        var src = btDeviceCache
+        var src = modelBluetoothDevices
+        if (!src) return
         var i = 0
         while (i < src.length && i < btModel.count) {
             btModel.setProperty(i, "mac", src[i].mac)
@@ -52,17 +60,18 @@ Item {
     }
 
     function btRefresh() {
-        if (!btPowerOn || btRefreshProc.running) return
-        btRefreshProc.running = true
+        // Handled in background thread
     }
 
     function btForceRefresh() {
-        btDeviceCache = []
-        if (btRefreshProc.running) { btRefreshAborted = true; btRefreshProc.running = false }
-        btRefresh()
+        btAutoScanStart()
     }
 
     function btAutoScanStart() {
+        let now = Date.now()
+        if (now - lastScanTime < 10000) return; 
+        lastScanTime = now;
+
         if (!btPowerOn || btAutoScan) return
         btAutoScan = true
         btScanProc.running = true
@@ -73,6 +82,7 @@ Item {
         btPowerProc.running = true
     }
 
+    // Connect, disconnect, and forget commands are one-off triggers
     function btConnect(mac) {
         if (btConnectProc.running) return
         btConnectingMAC = mac
@@ -95,12 +105,12 @@ Item {
         anchor.window: panelWindow
         implicitWidth: 320
         implicitHeight: 420
-        visible: root.menuOpen === true
+        visible: root.menuOpen
         color: "transparent"
         anchor.rect.x: screenGeometry.width - width - 24
         anchor.rect.y: 54
 
-        HoverHandler { onHoveredChanged: root.popupHoverChanged(hovered) }
+        HoverHandler { onHoveredChanged: { if (root.menuOpen) root.popupHoverChanged(hovered) } }
 
         Rectangle {
             anchors.fill: parent
@@ -260,50 +270,26 @@ Item {
             }
         }
 
-        Process { id: btRefreshProc
-            command: ["bash", "-c", "bluetoothctl devices | while IFS= read -r line; do mac=$(echo \"$line\" | awk '{print $2}'); name=$(echo \"$line\" | cut -d' ' -f3-); info=$(bluetoothctl info \"$mac\" 2>/dev/null); connected=$(echo \"$info\" | grep 'Connected: yes' | wc -l); paired=$(echo \"$info\" | grep 'Paired: yes' | wc -l); echo \"$mac|$name|$connected|$paired\"; done"]
-            property string output: ""
-            stdout: SplitParser {
-                onRead: (line) => {
-                    if (line.length === 0) return
-                    var parts = line.split("|")
-                    if (parts.length < 4) return
-                    root.btDeviceCache.push({ mac: parts[0], name: parts[1], connected: parts[2] === "1", paired: parts[3] === "1" })
-                }
-            }
-            onRunningChanged: {
-                if (!running) {
-                    root.syncBtModel()
-                    root.btRefreshAborted = false
-                } else {
-                    root.btDeviceCache = []
-                }
-            }
-        }
-
         Process { id: btPowerProc; property string action: "on"
             command: ["bash", "-c", action === "on" ? "rfkill unblock bluetooth" : "rfkill block bluetooth"]
-            onRunningChanged: { if (!running) { btPowerOn = (action === "on"); if (btPowerOn) btRefresh() } }
         }
 
         Process { id: btScanProc
             command: ["bluetoothctl", "--timeout", "7", "scan", "on"]
-            onRunningChanged: { if (!running) { btScanning = false; btAutoScan = false; btRefresh() } }
+            onRunningChanged: { if (!running && !_destroying) { btAutoScan = false } }
         }
 
         Process { id: btConnectProc; property string mac: ""
             command: ["bluetoothctl", "connect", mac]
-            onRunningChanged: { if (!running && mac !== "") { btConnectingMAC = ""; btRefresh() } }
+            onRunningChanged: { if (!running && !_destroying && mac !== "") { btConnectingMAC = "" } }
         }
 
         Process { id: btDisconnectProc; property string mac: ""
             command: ["bluetoothctl", "disconnect", mac]
-            onRunningChanged: { if (!running && mac !== "") btRefresh() }
         }
 
         Process { id: btRemoveProc; property string mac: ""
             command: ["bluetoothctl", "remove", mac]
-            onRunningChanged: { if (!running && mac !== "") btRefresh() }
         }
     }
 }

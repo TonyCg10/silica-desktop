@@ -45,7 +45,7 @@ Item {
         anchor.rect.x: screenGeometry.width - width - 24
         anchor.rect.y: 54
 
-        HoverHandler { onHoveredChanged: root.popupHoverChanged(hovered) }
+        HoverHandler { onHoveredChanged: { if (root.menuOpen) root.popupHoverChanged(hovered) } }
 
         Rectangle {
             anchors.fill: parent
@@ -74,6 +74,20 @@ Item {
                         width: 288; height: 28; radius: 6
                         color: "transparent"
                         property real valor: model.actual / Math.max(model.maximo, 1)
+                        property bool dragging: false
+                        property real dragValor: 0.0
+                        property real displayValor: dragging ? dragValor : valor
+
+                        Timer {
+                            id: setBrilloTimer
+                            interval: 100
+                            repeat: false
+                            property real pendingVal: 0.0
+                            onTriggered: {
+                                brilloItem.valor = pendingVal
+                                cmdSetBrillo.running = true
+                            }
+                        }
 
                         Process {
                             id: cmdSetBrillo
@@ -89,17 +103,43 @@ Item {
                             Item {
                                 id: sliderItem; width: parent.width - 70; height: 16; anchors.verticalCenter: parent.verticalCenter
                                 Rectangle { anchors.verticalCenter: parent.verticalCenter; width: parent.width; height: 4; radius: 2; color: "#2f334d"
-                                    Rectangle { width: parent.width * brilloItem.valor; height: 4; radius: 2; color: "#e0af68" }
+                                    Rectangle { width: parent.width * brilloItem.displayValor; height: 4; radius: 2; color: "#e0af68" }
                                 }
-                                Rectangle { x: (sliderItem.width - 10) * brilloItem.valor; anchors.verticalCenter: parent.verticalCenter; width: 10; height: 10; radius: 5; color: "#c0caf5"; border.color: "#2f334d"; border.width: 1 }
+                                Rectangle { x: (sliderItem.width - 10) * brilloItem.displayValor; anchors.verticalCenter: parent.verticalCenter; width: 10; height: 10; radius: 5; color: "#c0caf5"; border.color: "#2f334d"; border.width: 1 }
                                 MouseArea {
                                     anchors.fill: parent; acceptedButtons: Qt.LeftButton
-                                    onPositionChanged: (mouse) => { if (mouse.buttons & Qt.LeftButton) { brilloItem.valor = Math.max(0, Math.min(1, mouse.x / sliderItem.width)); cmdSetBrillo.running = true } }
-                                    onClicked: (mouse) => { brilloItem.valor = Math.max(0, Math.min(1, mouse.x / sliderItem.width)); cmdSetBrillo.running = true }
-                                    onWheel: (wheel) => { var pct = brilloItem.valor * 100; pct = wheel.angleDelta.y > 0 ? Math.ceil(Math.min(pct, 99) / 5 + 1) * 5 : Math.floor(Math.max(pct, 1) / 5 - 1) * 5; brilloItem.valor = Math.max(0, Math.min(100, pct)) / 100; cmdSetBrillo.running = true }
+                                    onPressed: {
+                                        brilloItem.dragging = true
+                                        brilloItem.dragValor = brilloItem.valor
+                                    }
+                                    onReleased: {
+                                        brilloItem.dragging = false
+                                    }
+                                    onPositionChanged: (mouse) => {
+                                        if (mouse.buttons & Qt.LeftButton) {
+                                            let newVal = Math.max(0, Math.min(1, mouse.x / sliderItem.width))
+                                            brilloItem.dragValor = newVal
+                                            setBrilloTimer.pendingVal = newVal
+                                            setBrilloTimer.restart()
+                                        }
+                                    }
+                                    onClicked: (mouse) => {
+                                        let newVal = Math.max(0, Math.min(1, mouse.x / sliderItem.width))
+                                        brilloItem.dragValor = newVal
+                                        setBrilloTimer.pendingVal = newVal
+                                        setBrilloTimer.restart()
+                                    }
+                                    onWheel: (wheel) => {
+                                        var pct = (brilloItem.dragging ? brilloItem.dragValor : brilloItem.valor) * 100
+                                        pct = wheel.angleDelta.y > 0 ? Math.ceil(Math.min(pct, 99) / 5 + 1) * 5 : Math.floor(Math.max(pct, 1) / 5 - 1) * 5
+                                        let newVal = Math.max(0, Math.min(100, pct)) / 100
+                                        brilloItem.dragValor = newVal
+                                        setBrilloTimer.pendingVal = newVal
+                                        setBrilloTimer.restart()
+                                    }
                                 }
                             }
-                            Text { text: Math.round(brilloItem.valor * 100) + "%"; color: "#787c99"; font.pixelSize: 10; anchors.verticalCenter: parent.verticalCenter; width: 30; horizontalAlignment: Text.AlignRight }
+                            Text { text: Math.round(brilloItem.displayValor * 100) + "%"; color: "#787c99"; font.pixelSize: 10; anchors.verticalCenter: parent.verticalCenter; width: 30; horizontalAlignment: Text.AlignRight }
                         }
                     }
                 }

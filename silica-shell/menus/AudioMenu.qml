@@ -63,7 +63,7 @@ Item {
         anchor.rect.x: screenGeometry.width - width - 24
         anchor.rect.y: 54
 
-        HoverHandler { onHoveredChanged: root.popupHoverChanged(hovered) }
+        HoverHandler { onHoveredChanged: { if (root.menuOpen) root.popupHoverChanged(hovered) } }
 
         Rectangle {
             anchors.fill: parent
@@ -89,9 +89,23 @@ Item {
                     Repeater {
                         model: audioSalidasModel
                         delegate: Item {
+                            id: audioItem
                             width: parent.width; height: 52
                             property real vol: model.volumen
                             property bool devMuted: model.mute
+                            property bool dragging: false
+                            property real dragVol: 0.0
+                            property real displayVol: dragging ? dragVol : vol
+
+                            Timer {
+                                id: setVolTimer
+                                interval: 50
+                                repeat: false
+                                property real pendingVol: 0.0
+                                onTriggered: {
+                                    Quickshell.execDetached(["wpctl", "set-volume", model.node_id.toString(), pendingVol.toFixed(2)])
+                                }
+                            }
 
                             Column {
                                 anchors.left: parent.left; anchors.leftMargin: 2
@@ -141,7 +155,7 @@ Item {
                                         width: parent.width - 22; height: 14; radius: 7
                                         color: "#24283b"
                                         Rectangle {
-                                            width: Math.max(0, Math.min(1, vol)) * parent.width
+                                            width: Math.max(0, Math.min(1, audioItem.displayVol)) * parent.width
                                             height: parent.height; radius: 7
                                             color: "#7aa2f7"
                                         }
@@ -149,7 +163,9 @@ Item {
                                             anchors.fill: parent
                                             onClicked: (mouse) => {
                                                 let newVol = Math.max(0, Math.min(1, mouse.x / width))
-                                                Quickshell.execDetached(["wpctl", "set-volume", model.node_id.toString(), newVol.toFixed(2)])
+                                                audioItem.dragVol = newVol
+                                                setVolTimer.pendingVol = newVol
+                                                setVolTimer.restart()
                                             }
                                         }
                                         property real dragStartVol: 0
@@ -158,22 +174,35 @@ Item {
                                             anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                             onWheel: (wheel) => {
                                                 let delta = wheel.angleDelta.y > 0 ? 0.05 : -0.05
-                                                let newVol = Math.max(0, Math.min(1, vol + delta))
-                                                Quickshell.execDetached(["wpctl", "set-volume", model.node_id.toString(), newVol.toFixed(2)])
+                                                let currentVal = audioItem.dragging ? audioItem.dragVol : audioItem.vol
+                                                let newVol = Math.max(0, Math.min(1, currentVal + delta))
+                                                audioItem.dragVol = newVol
+                                                setVolTimer.pendingVol = newVol
+                                                setVolTimer.restart()
                                             }
-                                            onPressed: (mouse) => { dragStartVol = vol; dragStartX = mouse.x; dragStartX = mapToItem(null, mouse.x, 0).x }
+                                            onPressed: (mouse) => {
+                                                audioItem.dragging = true
+                                                audioItem.dragVol = audioItem.vol
+                                                dragStartVol = audioItem.vol
+                                                dragStartX = mapToItem(null, mouse.x, 0).x
+                                            }
+                                            onReleased: {
+                                                audioItem.dragging = false
+                                            }
                                             onPositionChanged: (mouse) => {
                                                 if (!pressed) return
                                                 let globalX = mapToItem(null, mouse.x, 0).x
                                                 let delta = (globalX - dragStartX) / 200
                                                 let newVol = Math.max(0, Math.min(1, dragStartVol + delta))
-                                                Quickshell.execDetached(["wpctl", "set-volume", model.node_id.toString(), newVol.toFixed(2)])
+                                                audioItem.dragVol = newVol
+                                                setVolTimer.pendingVol = newVol
+                                                setVolTimer.restart()
                                             }
                                         }
                                     }
 
                                     Text {
-                                        text: Math.round(vol * 100) + "%"
+                                        text: Math.round(audioItem.displayVol * 100) + "%"
                                         color: "#565f89"; font.pixelSize: 8
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
@@ -198,9 +227,23 @@ Item {
                     Repeater {
                         model: audioEntradasModel
                         delegate: Item {
+                            id: audioItem
                             width: parent.width; height: 52
                             property real vol: model.volumen
                             property bool devMuted: model.mute
+                            property bool dragging: false
+                            property real dragVol: 0.0
+                            property real displayVol: dragging ? dragVol : vol
+
+                            Timer {
+                                id: setVolTimer
+                                interval: 50
+                                repeat: false
+                                property real pendingVol: 0.0
+                                onTriggered: {
+                                    Quickshell.execDetached(["wpctl", "set-volume", model.node_id.toString(), pendingVol.toFixed(2)])
+                                }
+                            }
 
                             Column {
                                 anchors.left: parent.left; anchors.leftMargin: 2
@@ -250,7 +293,7 @@ Item {
                                         width: parent.width - 22; height: 14; radius: 7
                                         color: "#24283b"
                                         Rectangle {
-                                            width: Math.max(0, Math.min(1, vol)) * parent.width
+                                            width: Math.max(0, Math.min(1, audioItem.displayVol)) * parent.width
                                             height: parent.height; radius: 7
                                             color: "#7aa2f7"
                                         }
@@ -258,13 +301,46 @@ Item {
                                             anchors.fill: parent
                                             onClicked: (mouse) => {
                                                 let newVol = Math.max(0, Math.min(1, mouse.x / width))
-                                                Quickshell.execDetached(["wpctl", "set-volume", model.node_id.toString(), newVol.toFixed(2)])
+                                                audioItem.dragVol = newVol
+                                                setVolTimer.pendingVol = newVol
+                                                setVolTimer.restart()
+                                            }
+                                        }
+                                        property real dragStartVol: 0
+                                        property real dragStartX: 0
+                                        MouseArea {
+                                            anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                            onWheel: (wheel) => {
+                                                let delta = wheel.angleDelta.y > 0 ? 0.05 : -0.05
+                                                let currentVal = audioItem.dragging ? audioItem.dragVol : audioItem.vol
+                                                let newVol = Math.max(0, Math.min(1, currentVal + delta))
+                                                audioItem.dragVol = newVol
+                                                setVolTimer.pendingVol = newVol
+                                                setVolTimer.restart()
+                                            }
+                                            onPressed: (mouse) => {
+                                                audioItem.dragging = true
+                                                audioItem.dragVol = audioItem.vol
+                                                dragStartVol = audioItem.vol
+                                                dragStartX = mapToItem(null, mouse.x, 0).x
+                                            }
+                                            onReleased: {
+                                                audioItem.dragging = false
+                                            }
+                                            onPositionChanged: (mouse) => {
+                                                if (!pressed) return
+                                                let globalX = mapToItem(null, mouse.x, 0).x
+                                                let delta = (globalX - dragStartX) / 200
+                                                let newVol = Math.max(0, Math.min(1, dragStartVol + delta))
+                                                audioItem.dragVol = newVol
+                                                setVolTimer.pendingVol = newVol
+                                                setVolTimer.restart()
                                             }
                                         }
                                     }
 
                                     Text {
-                                        text: Math.round(vol * 100) + "%"
+                                        text: Math.round(audioItem.displayVol * 100) + "%"
                                         color: "#565f89"; font.pixelSize: 8
                                         anchors.verticalCenter: parent.verticalCenter
                                     }

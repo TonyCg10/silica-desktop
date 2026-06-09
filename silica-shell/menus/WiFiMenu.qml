@@ -21,6 +21,10 @@ Item {
     property bool wifiShowPassword: false
     property string wifiConnectingSSID: ""
     property bool wifiPowerOn: true
+    property bool _destroying: false
+    property real lastRefreshTime: 0
+
+    Component.onDestruction: { _destroying = true }
 
     function iconoWifi(intensidad) {
         if (intensidad >= 75) return "\uF0E9E"
@@ -53,7 +57,16 @@ Item {
     function wifiRefrescar() {
         if (!wifiPowerOn) return
         if (!wifiScanProc.running) wifiScanProc.running = true
+    }
+
+    function wifiForceRescan() {
+        let now = Date.now()
+        if (now - lastRefreshTime < 10000) return; 
+        lastRefreshTime = now;
+
+        if (!wifiPowerOn) return
         Quickshell.execDetached(["nmcli", "device", "wifi", "rescan"])
+        if (!wifiScanProc.running) wifiScanProc.running = true
     }
 
     function wifiDesconectar() {
@@ -86,12 +99,12 @@ Item {
         anchor.window: panelWindow
         implicitWidth: 320
         implicitHeight: 420
-        visible: root.menuOpen === true
+        visible: root.menuOpen
         color: "transparent"
         anchor.rect.x: screenGeometry.width - width - 24
         anchor.rect.y: 54
 
-        HoverHandler { onHoveredChanged: root.popupHoverChanged(hovered) }
+        HoverHandler { onHoveredChanged: { if (root.menuOpen) root.popupHoverChanged(hovered) } }
 
         Rectangle {
             anchors.fill: parent
@@ -135,7 +148,7 @@ Item {
                             width: 24; height: 24; radius: 12
                             color: rh.containsMouse ? "#2f334d" : "transparent"
                             Text { anchors.centerIn: parent; text: "\uF0452"; color: "#7aa2f7"; font.pixelSize: 11 }
-                            MouseArea { id: rh; anchors.fill: parent; hoverEnabled: true; onClicked: wifiRefrescar() }
+                            MouseArea { id: rh; anchors.fill: parent; hoverEnabled: true; onClicked: wifiForceRescan() }
                         }
                     }
                     Item { width: 1; height: 8 }
@@ -201,19 +214,19 @@ Item {
 
         Process { id: cmdConectarOpen; property string ssid: ""
             command: ["nmcli", "device", "wifi", "connect", ssid]
-            onRunningChanged: { if (!running && ssid !== "") { wifiConnectingSSID = ""; wifiView = "list"; wifiRefrescar() } }
+            onRunningChanged: { if (!running && !_destroying && ssid !== "") { wifiConnectingSSID = ""; wifiView = "list"; wifiRefrescar() } }
         }
         Process { id: cmdConectarPass; property string ssid: ""; property string clave: ""
             command: ["nmcli", "device", "wifi", "connect", ssid, "password", clave]
-            onRunningChanged: { if (!running && ssid !== "") { wifiConnectingSSID = ""; wifiPassword = ""; wifiView = "list"; wifiRefrescar() } }
+            onRunningChanged: { if (!running && !_destroying && ssid !== "") { wifiConnectingSSID = ""; wifiPassword = ""; wifiView = "list"; wifiRefrescar() } }
         }
         Process { id: cmdDesconectar; property string ssid: ""
             command: ["bash", "-c", "dev=$(nmcli -t -f DEVICE,TYPE device status 2>/dev/null | grep ':wifi$' | head -1 | cut -d: -f1); nmcli device disconnect \"$dev\" 2>/dev/null || nmcli connection down id \"$ssid\" 2>/dev/null"]
-            onRunningChanged: { if (!running && ssid !== "") wifiRefrescar() }
+            onRunningChanged: { if (!running && !_destroying && ssid !== "") wifiRefrescar() }
         }
         Process { id: cmdWifiPower; property string action: "on"
             command: ["nmcli", "radio", "wifi", action]
-            onRunningChanged: { if (!running) { wifiPowerOn = (action === "on"); if (wifiPowerOn) wifiRefrescar() } }
+            onRunningChanged: { if (!running && !_destroying) { wifiPowerOn = (action === "on"); if (wifiPowerOn) wifiRefrescar() } }
         }
     }
 
