@@ -28,6 +28,13 @@ pub struct AudioDevice {
 }
 
 #[derive(Serialize, Clone, Default)]
+pub struct VentanaInfo {
+    pub clase: String,
+    pub titulo: String,
+    pub icono: String,
+}
+
+#[derive(Serialize, Clone, Default)]
 pub struct BtDevice {
     pub mac: String,
     pub name: String,
@@ -39,7 +46,9 @@ pub struct BtDevice {
 pub struct SilicaEvent {
     pub hora: String,
     pub bateria: i32,
+    pub workspaces_por_monitor: HashMap<String, Vec<i32>>,
     pub workspaces: HashMap<String, i32>,
+    pub ventanas_por_workspace: HashMap<i32, VentanaInfo>,
     pub ventana_titulo: String,
     pub ventana_clase: String,
     pub ventana_icono: String,
@@ -59,7 +68,9 @@ pub struct SilicaEvent {
 }
 
 pub struct SilicaState {
+    pub workspaces_por_monitor: HashMap<String, Vec<i32>>,
     pub workspaces: HashMap<String, i32>,
+    pub ventanas_por_workspace: HashMap<i32, VentanaInfo>,
     pub monitor_enfocado: String,
     pub ventana_titulo: String,
     pub ventana_clase: String,
@@ -83,7 +94,9 @@ pub struct SilicaState {
 impl SilicaState {
     pub fn new() -> Self {
         Self {
+            workspaces_por_monitor: HashMap::new(),
             workspaces: HashMap::new(),
+            ventanas_por_workspace: HashMap::new(),
             monitor_enfocado: String::new(),
             ventana_titulo: String::new(),
             ventana_clase: String::new(),

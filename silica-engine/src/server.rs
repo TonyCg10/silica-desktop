@@ -9,6 +9,7 @@ use crate::state::{SilicaEvent, SilicaState};
 use crate::hardware;
 use crate::wifi;
 use crate::bluetooth;
+use crate::hyprland;
 
 pub fn iniciar_servidor_ipc(socket_path: &str, estado: Arc<Mutex<SilicaState>>) {
     let _ = fs::remove_file(socket_path);
@@ -89,6 +90,19 @@ pub fn iniciar_servidor_ipc(socket_path: &str, estado: Arc<Mutex<SilicaState>>) 
         });
     }
 
+    {
+        let estado_ws = Arc::clone(&estado);
+        thread::spawn(move || {
+            loop {
+                let ids = hyprland::consultar_workspaces_por_monitor();
+                if let Ok(mut s) = estado_ws.lock() {
+                    s.workspaces_por_monitor = ids;
+                }
+                thread::sleep(Duration::from_secs(5));
+            }
+        });
+    }
+
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
@@ -103,7 +117,9 @@ pub fn iniciar_servidor_ipc(socket_path: &str, estado: Arc<Mutex<SilicaState>>) 
 
                     loop {
                         let (
+                            workspaces_por_monitor,
                             workspaces_snapshot,
+                            ventanas_por_workspace,
                             titulo,
                             clase,
                             icono,
@@ -123,7 +139,9 @@ pub fn iniciar_servidor_ipc(socket_path: &str, estado: Arc<Mutex<SilicaState>>) 
                         ) = {
                             let s = estado_client.lock().unwrap();
                             (
+                                s.workspaces_por_monitor.clone(),
                                 s.workspaces.clone(),
+                                s.ventanas_por_workspace.clone(),
                                 s.ventana_titulo.clone(),
                                 s.ventana_clase.clone(),
                                 s.ventana_icono.clone(),
@@ -146,7 +164,9 @@ pub fn iniciar_servidor_ipc(socket_path: &str, estado: Arc<Mutex<SilicaState>>) 
                         let datos = SilicaEvent {
                             hora: Local::now().format("%H:%M:%S").to_string(),
                             bateria,
+                            workspaces_por_monitor,
                             workspaces: workspaces_snapshot,
+                            ventanas_por_workspace,
                             ventana_titulo: titulo,
                             ventana_clase: clase,
                             ventana_icono: icono,
