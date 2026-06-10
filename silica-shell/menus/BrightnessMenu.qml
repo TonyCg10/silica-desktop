@@ -3,9 +3,11 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import Quickshell._Window
+import "../components" as Components
 
 Item {
     id: root
+    implicitHeight: menuContainer.childrenRect.height
     required property var panelWindow
     required property rect screenGeometry
     property bool menuOpen: false
@@ -35,20 +37,17 @@ Item {
     onModelBrilloChanged: sincronizarBrillo()
     onMenuOpenChanged: { if (menuOpen) sincronizarBrillo() }
 
-    PopupWindow {
-        id: brilloMenu
-        anchor.window: panelWindow
-        implicitWidth: 300
-        implicitHeight: 50 + brilloModel.count * 34 + 12
-        visible: root.menuOpen
-        color: "transparent"
-        anchor.rect.x: screenGeometry.width - width - 24
-        anchor.rect.y: 54
-
-        HoverHandler { onHoveredChanged: { if (root.menuOpen) root.popupHoverChanged(hovered) } }
-
+    Item {
+        id: menuContainer
+        width: parent.width
+        implicitHeight: contentColumn.childrenRect.height
+        opacity: root.menuOpen ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+        visible: opacity > 0
+        
         Rectangle {
-            anchors.fill: parent
+            width: parent.width
+            implicitHeight: contentColumn.childrenRect.height
             radius: 12
             color: "#1f2335"
             border.color: "#2f334d"; border.width: 1
@@ -57,21 +56,25 @@ Item {
             Keys.onEscapePressed: root.closeRequested()
 
             Column {
-                anchors.fill: parent
+                id: contentColumn
+                width: parent.width
                 anchors.margins: 6
                 spacing: 4
 
-                Row {
-                    spacing: 6; anchors.horizontalCenter: parent.horizontalCenter
-                    Text { text: "\uF0CFF"; color: "#7aa2f7"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: "Brillo"; color: "#c0caf5"; font.pixelSize: 11; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
-                }
+                    // ── BRIGHTNESS section header ──
+                    Item { width: 1; implicitHeight: 6 }
+                    Components.SectionHeader {
+                        icon: "\uF0CFF"
+                        title: "Brillo"
+                        iconColor: "#e0af68"
+                    }
+                    Item { width: 1; implicitHeight: 6 }
 
                 Repeater {
                     model: brilloModel
                     delegate: Rectangle {
                         id: brilloItem
-                        width: 288; height: 28; radius: 6
+                        width: parent ? parent.width : 276; height: 28; implicitHeight: 28; radius: 6
                         color: "transparent"
                         property real valor: model.actual / Math.max(model.maximo, 1)
                         property bool dragging: false
@@ -94,48 +97,31 @@ Item {
                             command: ["ddcutil", "setvcp", "10", Math.round(brilloItem.valor * 100).toString(), "--display", model.display_num.toString()]
                         }
 
-                        Row {
-                            anchors.fill: parent; anchors.leftMargin: 4; anchors.rightMargin: 4; spacing: 6
-                            Text {
-                                text: model.nombre.indexOf("DP-") === 0 ? "\uF10F0" : model.nombre.indexOf("HDMI-") === 0 ? "\uF1387" : "\uF0CFF"
-                                color: "#c0caf5"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter
-                            }
-                            Item {
-                                id: sliderItem; width: parent.width - 70; height: 16; anchors.verticalCenter: parent.verticalCenter
-                                Rectangle { anchors.verticalCenter: parent.verticalCenter; width: parent.width; height: 4; radius: 2; color: "#2f334d"
-                                    Rectangle { width: parent.width * brilloItem.displayValor; height: 4; radius: 2; color: "#e0af68" }
+                            Row {
+                                anchors.fill: parent; anchors.leftMargin: 4; anchors.rightMargin: 4; spacing: 6
+                                Components.SpinnerIcon {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spinning: cmdSetBrillo.running
+                                    icon: model.nombre.indexOf("DP-") === 0 ? "\uF10F0" : model.nombre.indexOf("HDMI-") === 0 ? "\uF1387" : "\uF0CFF"
+                                    activeColor: "#e0af68"
+                                    idleColor: "#c0caf5"
+                                    size: 11
                                 }
-                                Rectangle { x: (sliderItem.width - 10) * brilloItem.displayValor; anchors.verticalCenter: parent.verticalCenter; width: 10; height: 10; radius: 5; color: "#c0caf5"; border.color: "#2f334d"; border.width: 1 }
-                                MouseArea {
-                                    anchors.fill: parent; acceptedButtons: Qt.LeftButton
-                                    onPressed: {
-                                        brilloItem.dragging = true
+                            Components.SliderWidget {
+                                id: sliderItem
+                                width: parent.width - 70; height: 16
+                                anchors.verticalCenter: parent.verticalCenter
+                                value: brilloItem.displayValor
+                                accentColor: "#e0af68"
+                                onMoved: (newValue) => {
+                                    brilloItem.dragValor = newValue
+                                    setBrilloTimer.pendingVal = newValue
+                                    setBrilloTimer.restart()
+                                }
+                                onPressedChanged: {
+                                    brilloItem.dragging = pressed
+                                    if (pressed) {
                                         brilloItem.dragValor = brilloItem.valor
-                                    }
-                                    onReleased: {
-                                        brilloItem.dragging = false
-                                    }
-                                    onPositionChanged: (mouse) => {
-                                        if (mouse.buttons & Qt.LeftButton) {
-                                            let newVal = Math.max(0, Math.min(1, mouse.x / sliderItem.width))
-                                            brilloItem.dragValor = newVal
-                                            setBrilloTimer.pendingVal = newVal
-                                            setBrilloTimer.restart()
-                                        }
-                                    }
-                                    onClicked: (mouse) => {
-                                        let newVal = Math.max(0, Math.min(1, mouse.x / sliderItem.width))
-                                        brilloItem.dragValor = newVal
-                                        setBrilloTimer.pendingVal = newVal
-                                        setBrilloTimer.restart()
-                                    }
-                                    onWheel: (wheel) => {
-                                        var pct = (brilloItem.dragging ? brilloItem.dragValor : brilloItem.valor) * 100
-                                        pct = wheel.angleDelta.y > 0 ? Math.ceil(Math.min(pct, 99) / 5 + 1) * 5 : Math.floor(Math.max(pct, 1) / 5 - 1) * 5
-                                        let newVal = Math.max(0, Math.min(100, pct)) / 100
-                                        brilloItem.dragValor = newVal
-                                        setBrilloTimer.pendingVal = newVal
-                                        setBrilloTimer.restart()
                                     }
                                 }
                             }
@@ -144,7 +130,7 @@ Item {
                     }
                 }
 
-                Item { visible: brilloModel.count === 0; width: parent.width; height: 24
+                Item { visible: brilloModel.count === 0; width: parent.width; height: 24; implicitHeight: brilloModel.count === 0 ? 24 : 0
                     Text { text: "No hay controles de brillo"; color: "#565f89"; font.pixelSize: 10; anchors.centerIn: parent }
                 }
             }

@@ -3,6 +3,7 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import Quickshell._Window
+import "../components" as Components
 
 Item {
     id: root
@@ -15,6 +16,8 @@ Item {
     property var modelEntradas
     property real volumenActual
     property bool volumenMute
+
+    implicitHeight: menuContainer.implicitHeight
 
     ListModel { id: audioSalidasModel }
     ListModel { id: audioEntradasModel }
@@ -53,44 +56,54 @@ Item {
         }
     }
 
-    PopupWindow {
-        id: audioMenu
-        anchor.window: panelWindow
-        implicitWidth: 360
-        implicitHeight: Math.max(audioSalidasModel.count, audioEntradasModel.count, 1) * 60 + 66
-        visible: root.menuOpen
-        color: "transparent"
-        anchor.rect.x: screenGeometry.width - width - 24
-        anchor.rect.y: 54
-
-        HoverHandler { onHoveredChanged: { if (root.menuOpen) root.popupHoverChanged(hovered) } }
+    Item {
+        id: menuContainer
+        width: parent.width
+        implicitHeight: audioListColumn.implicitHeight
+        opacity: root.menuOpen ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+        visible: opacity > 0
 
         Rectangle {
-            anchors.fill: parent
-            radius: 12
-            color: "#1f2335"
-            border.color: "#2f334d"; border.width: 1
+            width: parent.width
+            height: parent.implicitHeight
+            implicitHeight: parent.implicitHeight
+            radius: 14
+            color: "transparent"
             clip: true
             focus: true
             Keys.onEscapePressed: root.closeRequested()
 
-            Row {
-                anchors.fill: parent
-                anchors.leftMargin: 8
-                anchors.rightMargin: 8
-                spacing: 8
+            Flickable {
+                width: parent.width
+                height: contentHeight
+                contentHeight: audioListColumn.implicitHeight
+                clip: true
+                interactive: contentHeight > height
+                boundsBehavior: Flickable.StopAtBounds
 
                 Column {
-                    width: (parent.width - 8) / 2; spacing: 2
-                    anchors.verticalCenter: parent.verticalCenter
+                    id: audioListColumn
+                    width: parent.width
+                    spacing: 0
 
-                    Text { text: (volumenMute ? "\uF0D59" : "\uF0D5A") + "  SALIDAS"; color: "#565f89"; font.pixelSize: 9; leftPadding: 2 }
+                    // ── SALIDAS section header ──
+                    Item { width: 1; implicitHeight: 12 }
+                    Components.SectionHeader {
+                        anchors.leftMargin: 12
+                        icon: volumenMute ? "\uF0D59" : "\uF0D5A"
+                        title: "SALIDAS"
+                    }
+                    Item { width: 1; implicitHeight: 4 }
 
+                    // ── Salidas devices ──
                     Repeater {
                         model: audioSalidasModel
                         delegate: Item {
-                            id: audioItem
-                            width: parent.width; height: 52
+                            id: salidaItem
+                            width: audioListColumn.width
+                            implicitHeight: salidaInnerCol.implicitHeight + 10
+
                             property real vol: model.volumen
                             property bool devMuted: model.mute
                             property bool dragging: false
@@ -98,49 +111,49 @@ Item {
                             property real displayVol: dragging ? dragVol : vol
 
                             Timer {
-                                id: setVolTimer
-                                interval: 50
-                                repeat: false
+                                id: salidaVolTimer; interval: 50; repeat: false
                                 property real pendingVol: 0.0
-                                onTriggered: {
-                                    Quickshell.execDetached(["wpctl", "set-volume", model.node_id.toString(), pendingVol.toFixed(2)])
-                                }
+                                onTriggered: Quickshell.execDetached(["wpctl", "set-volume", model.node_id.toString(), pendingVol.toFixed(2)])
                             }
 
                             Column {
-                                anchors.left: parent.left; anchors.leftMargin: 2
-                                anchors.right: parent.right; anchors.rightMargin: 2
-                                spacing: 2
+                                id: salidaInnerCol
+                                anchors.left: parent.left; anchors.leftMargin: 10
+                                anchors.right: parent.right; anchors.rightMargin: 10
+                                anchors.top: parent.top; anchors.topMargin: 5
+                                spacing: 5
 
                                 Row {
                                     width: parent.width; spacing: 4
                                     Text {
                                         text: model.predeterminado ? "\uF03ED" : ""
-                                        color: "#7aa2f7"; font.pixelSize: 10
+                                        color: "#7aa2f7"; font.pixelSize: 11
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                     Text {
-                                        width: parent.width - 30
+                                        width: parent.width - 36
                                         text: model.descripcion || model.nombre
                                         color: model.predeterminado ? "#c0caf5" : "#787c99"
-                                        font.pixelSize: 10; font.bold: model.predeterminado
+                                        font.pixelSize: 11; font.bold: model.predeterminado
                                         elide: Text.ElideRight
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                     Rectangle {
-                                        width: 20; height: 20; radius: 10
-                                        color: muteArea.containsMouse ? "#2f334d" : "transparent"
+                                        width: 22; height: 22; radius: 11
+                                        color: salidaMuteArea.containsMouse ? "#2f334d" : "transparent"
                                         anchors.verticalCenter: parent.verticalCenter
                                         Text {
                                             anchors.centerIn: parent
-                                            text: devMuted ? "\uF075A" : "\uF06A0"
-                                            color: devMuted ? "#f7768e" : "#7aa2f7"
-                                            font.pixelSize: 10
+                                            text: salidaItem.devMuted ? "\uF075A" : "\uF06A0"
+                                            color: salidaItem.devMuted ? "#f7768e" : "#7aa2f7"
+                                            font.pixelSize: 11
                                         }
                                         MouseArea {
-                                            id: muteArea; anchors.fill: parent; hoverEnabled: true
+                                            id: salidaMuteArea; anchors.fill: parent; hoverEnabled: true
                                             onClicked: {
-                                                let cmd = devMuted ? "wpctl set-mute " + model.node_id + " toggle" : "wpctl set-mute " + model.node_id + " 1"
+                                                let cmd = salidaItem.devMuted
+                                                    ? "wpctl set-mute " + model.node_id + " toggle"
+                                                    : "wpctl set-mute " + model.node_id + " 1"
                                                 Quickshell.execDetached(cmd.split(" "))
                                             }
                                         }
@@ -148,62 +161,29 @@ Item {
                                 }
 
                                 Row {
-                                    width: parent.width; spacing: 4
-                                    Item { width: 16; height: 1 }
-
-                                    Rectangle {
-                                        width: parent.width - 22; height: 14; radius: 7
-                                        color: "#24283b"
-                                        Rectangle {
-                                            width: Math.max(0, Math.min(1, audioItem.displayVol)) * parent.width
-                                            height: parent.height; radius: 7
-                                            color: "#7aa2f7"
+                                    width: parent.width; spacing: 6
+                                    Components.SliderWidget {
+                                        id: salidaSlider
+                                        width: parent.width - 42; height: 16
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        value: salidaItem.displayVol
+                                        accentColor: salidaItem.devMuted ? "#565f89" : "#7aa2f7"
+                                        onMoved: (newValue) => {
+                                            salidaItem.dragVol = newValue
+                                            salidaVolTimer.pendingVol = newValue
+                                            salidaVolTimer.restart()
                                         }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: (mouse) => {
-                                                let newVol = Math.max(0, Math.min(1, mouse.x / width))
-                                                audioItem.dragVol = newVol
-                                                setVolTimer.pendingVol = newVol
-                                                setVolTimer.restart()
-                                            }
-                                        }
-                                        property real dragStartVol: 0
-                                        property real dragStartX: 0
-                                        MouseArea {
-                                            anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                            onWheel: (wheel) => {
-                                                let delta = wheel.angleDelta.y > 0 ? 0.05 : -0.05
-                                                let currentVal = audioItem.dragging ? audioItem.dragVol : audioItem.vol
-                                                let newVol = Math.max(0, Math.min(1, currentVal + delta))
-                                                audioItem.dragVol = newVol
-                                                setVolTimer.pendingVol = newVol
-                                                setVolTimer.restart()
-                                            }
-                                            onPressed: (mouse) => {
-                                                audioItem.dragging = true
-                                                audioItem.dragVol = audioItem.vol
-                                                dragStartVol = audioItem.vol
-                                                dragStartX = mapToItem(null, mouse.x, 0).x
-                                            }
-                                            onReleased: {
-                                                audioItem.dragging = false
-                                            }
-                                            onPositionChanged: (mouse) => {
-                                                if (!pressed) return
-                                                let globalX = mapToItem(null, mouse.x, 0).x
-                                                let delta = (globalX - dragStartX) / 200
-                                                let newVol = Math.max(0, Math.min(1, dragStartVol + delta))
-                                                audioItem.dragVol = newVol
-                                                setVolTimer.pendingVol = newVol
-                                                setVolTimer.restart()
+                                        onPressedChanged: {
+                                            salidaItem.dragging = pressed
+                                            if (pressed) {
+                                                salidaItem.dragVol = salidaItem.vol
                                             }
                                         }
                                     }
-
                                     Text {
-                                        text: Math.round(audioItem.displayVol * 100) + "%"
-                                        color: "#565f89"; font.pixelSize: 8
+                                        text: Math.round(salidaItem.displayVol * 100) + "%"
+                                        color: "#787c99"; font.pixelSize: 10
+                                        width: 36; horizontalAlignment: Text.AlignRight
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                 }
@@ -211,24 +191,33 @@ Item {
                         }
                     }
 
-                    Item { visible: audioSalidasModel.count === 0; width: parent.width; height: 12
-                        Text { text: "Sin dispositivos"; color: "#3b4261"; font.pixelSize: 8; anchors.centerIn: parent }
+                    Item {
+                        visible: audioSalidasModel.count === 0
+                        width: parent.width; implicitHeight: audioSalidasModel.count === 0 ? 28 : 0
+                        Text { text: "Sin dispositivos de salida"; color: "#3b4261"; font.pixelSize: 10; anchors.centerIn: parent }
                     }
-                }
 
-                Rectangle { width: 1; height: parent.height - 16; anchors.verticalCenter: parent.verticalCenter; color: "#2f334d" }
+                    // ── Divider ──
+                    Item { width: 1; implicitHeight: 8 }
+                    Components.Separator { margins: 12 }
+                    Item { width: 1; implicitHeight: 8 }
 
-                Column {
-                    width: (parent.width - 8) / 2; spacing: 2
-                    anchors.verticalCenter: parent.verticalCenter
+                    // ── ENTRADAS section header ──
+                    Components.SectionHeader {
+                        anchors.leftMargin: 12
+                        icon: "\uF03E5"
+                        title: "ENTRADAS"
+                    }
+                    Item { width: 1; implicitHeight: 4 }
 
-                    Text { text: "\uF03E5  ENTRADAS"; color: "#565f89"; font.pixelSize: 9; leftPadding: 2 }
-
+                    // ── Entradas devices ──
                     Repeater {
                         model: audioEntradasModel
                         delegate: Item {
-                            id: audioItem
-                            width: parent.width; height: 52
+                            id: entradaItem
+                            width: audioListColumn.width
+                            implicitHeight: entradaInnerCol.implicitHeight + 10
+
                             property real vol: model.volumen
                             property bool devMuted: model.mute
                             property bool dragging: false
@@ -236,49 +225,49 @@ Item {
                             property real displayVol: dragging ? dragVol : vol
 
                             Timer {
-                                id: setVolTimer
-                                interval: 50
-                                repeat: false
+                                id: entradaVolTimer; interval: 50; repeat: false
                                 property real pendingVol: 0.0
-                                onTriggered: {
-                                    Quickshell.execDetached(["wpctl", "set-volume", model.node_id.toString(), pendingVol.toFixed(2)])
-                                }
+                                onTriggered: Quickshell.execDetached(["wpctl", "set-volume", model.node_id.toString(), pendingVol.toFixed(2)])
                             }
 
                             Column {
-                                anchors.left: parent.left; anchors.leftMargin: 2
-                                anchors.right: parent.right; anchors.rightMargin: 2
-                                spacing: 2
+                                id: entradaInnerCol
+                                anchors.left: parent.left; anchors.leftMargin: 10
+                                anchors.right: parent.right; anchors.rightMargin: 10
+                                anchors.top: parent.top; anchors.topMargin: 5
+                                spacing: 5
 
                                 Row {
                                     width: parent.width; spacing: 4
                                     Text {
                                         text: model.predeterminado ? "\uF03ED" : ""
-                                        color: "#7aa2f7"; font.pixelSize: 10
+                                        color: "#7aa2f7"; font.pixelSize: 11
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                     Text {
-                                        width: parent.width - 30
+                                        width: parent.width - 36
                                         text: model.descripcion || model.nombre
                                         color: model.predeterminado ? "#c0caf5" : "#787c99"
-                                        font.pixelSize: 10; font.bold: model.predeterminado
+                                        font.pixelSize: 11; font.bold: model.predeterminado
                                         elide: Text.ElideRight
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                     Rectangle {
-                                        width: 20; height: 20; radius: 10
-                                        color: muteAreaIn.containsMouse ? "#2f334d" : "transparent"
+                                        width: 22; height: 22; radius: 11
+                                        color: entradaMuteArea.containsMouse ? "#2f334d" : "transparent"
                                         anchors.verticalCenter: parent.verticalCenter
                                         Text {
                                             anchors.centerIn: parent
-                                            text: devMuted ? "\uF075A" : "\uF06A0"
-                                            color: devMuted ? "#f7768e" : "#7aa2f7"
-                                            font.pixelSize: 10
+                                            text: entradaItem.devMuted ? "\uF075A" : "\uF06A0"
+                                            color: entradaItem.devMuted ? "#f7768e" : "#7aa2f7"
+                                            font.pixelSize: 11
                                         }
                                         MouseArea {
-                                            id: muteAreaIn; anchors.fill: parent; hoverEnabled: true
+                                            id: entradaMuteArea; anchors.fill: parent; hoverEnabled: true
                                             onClicked: {
-                                                let cmd = devMuted ? "wpctl set-mute " + model.node_id + " toggle" : "wpctl set-mute " + model.node_id + " 1"
+                                                let cmd = entradaItem.devMuted
+                                                    ? "wpctl set-mute " + model.node_id + " toggle"
+                                                    : "wpctl set-mute " + model.node_id + " 1"
                                                 Quickshell.execDetached(cmd.split(" "))
                                             }
                                         }
@@ -286,62 +275,29 @@ Item {
                                 }
 
                                 Row {
-                                    width: parent.width; spacing: 4
-                                    Item { width: 16; height: 1 }
-
-                                    Rectangle {
-                                        width: parent.width - 22; height: 14; radius: 7
-                                        color: "#24283b"
-                                        Rectangle {
-                                            width: Math.max(0, Math.min(1, audioItem.displayVol)) * parent.width
-                                            height: parent.height; radius: 7
-                                            color: "#7aa2f7"
+                                    width: parent.width; spacing: 6
+                                    Components.SliderWidget {
+                                        id: entradaSlider
+                                        width: parent.width - 42; height: 16
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        value: entradaItem.displayVol
+                                        accentColor: entradaItem.devMuted ? "#565f89" : "#7aa2f7"
+                                        onMoved: (newValue) => {
+                                            entradaItem.dragVol = newValue
+                                            entradaVolTimer.pendingVol = newValue
+                                            entradaVolTimer.restart()
                                         }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: (mouse) => {
-                                                let newVol = Math.max(0, Math.min(1, mouse.x / width))
-                                                audioItem.dragVol = newVol
-                                                setVolTimer.pendingVol = newVol
-                                                setVolTimer.restart()
-                                            }
-                                        }
-                                        property real dragStartVol: 0
-                                        property real dragStartX: 0
-                                        MouseArea {
-                                            anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                            onWheel: (wheel) => {
-                                                let delta = wheel.angleDelta.y > 0 ? 0.05 : -0.05
-                                                let currentVal = audioItem.dragging ? audioItem.dragVol : audioItem.vol
-                                                let newVol = Math.max(0, Math.min(1, currentVal + delta))
-                                                audioItem.dragVol = newVol
-                                                setVolTimer.pendingVol = newVol
-                                                setVolTimer.restart()
-                                            }
-                                            onPressed: (mouse) => {
-                                                audioItem.dragging = true
-                                                audioItem.dragVol = audioItem.vol
-                                                dragStartVol = audioItem.vol
-                                                dragStartX = mapToItem(null, mouse.x, 0).x
-                                            }
-                                            onReleased: {
-                                                audioItem.dragging = false
-                                            }
-                                            onPositionChanged: (mouse) => {
-                                                if (!pressed) return
-                                                let globalX = mapToItem(null, mouse.x, 0).x
-                                                let delta = (globalX - dragStartX) / 200
-                                                let newVol = Math.max(0, Math.min(1, dragStartVol + delta))
-                                                audioItem.dragVol = newVol
-                                                setVolTimer.pendingVol = newVol
-                                                setVolTimer.restart()
+                                        onPressedChanged: {
+                                            entradaItem.dragging = pressed
+                                            if (pressed) {
+                                                entradaItem.dragVol = entradaItem.vol
                                             }
                                         }
                                     }
-
                                     Text {
-                                        text: Math.round(audioItem.displayVol * 100) + "%"
-                                        color: "#565f89"; font.pixelSize: 8
+                                        text: Math.round(entradaItem.displayVol * 100) + "%"
+                                        color: "#787c99"; font.pixelSize: 10
+                                        width: 36; horizontalAlignment: Text.AlignRight
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                 }
@@ -349,19 +305,28 @@ Item {
                         }
                     }
 
-                    Item { visible: audioEntradasModel.count === 0; width: parent.width; height: 12
-                        Text { text: "Sin dispositivos"; color: "#3b4261"; font.pixelSize: 8; anchors.centerIn: parent }
+                    Item {
+                        visible: audioEntradasModel.count === 0
+                        width: parent.width; implicitHeight: audioEntradasModel.count === 0 ? 28 : 0
+                        Text { text: "Sin dispositivos de entrada"; color: "#3b4261"; font.pixelSize: 10; anchors.centerIn: parent }
                     }
 
+                    // ── Default device button ──
+                    Item { width: 1; implicitHeight: 8 }
                     Rectangle {
-                        width: parent.width - 8; height: 24; radius: 6
+                        width: parent.width - 24; implicitHeight: 28; height: 28; radius: 6; x: 12
                         color: defBtn.containsMouse ? "#24283b" : "transparent"
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        Text { anchors.centerIn: parent; text: "Dispositivo predeterminado..."; color: "#565f89"; font.pixelSize: 8 }
-                        MouseArea { id: defBtn; anchors.fill: parent; hoverEnabled: true
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Dispositivo predeterminado..."
+                            color: "#565f89"; font.pixelSize: 10
+                        }
+                        MouseArea {
+                            id: defBtn; anchors.fill: parent; hoverEnabled: true
                             onClicked: Quickshell.execDetached(["wpctl", "set-default", "@DEFAULT_SINK@"])
                         }
                     }
+                    Item { width: 1; implicitHeight: 10 }
                 }
             }
         }

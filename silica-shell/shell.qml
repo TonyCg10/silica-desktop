@@ -68,19 +68,23 @@ ShellRoot {
                 readonly property int monitorWorkspace: root.workspaces[modelData.name] || 1
 
                 anchors.top: true; anchors.left: true; anchors.right: true
-                implicitHeight: 50
-                exclusionMode: ExclusionMode.Auto
+                implicitHeight: Math.max(50, statusBar.height)
+                exclusionMode: ExclusionMode.Normal
+                exclusiveZone: 50
                 color: "transparent"
 
                 WorkspaceBar {
                     anchors.left: parent.left
                     anchors.leftMargin: 24
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: (50 - height) / 2
                     activeWorkspace: monitorWorkspace
                 }
 
                 DynamicIsland {
-                    anchors.centerIn: parent
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: (50 - height) / 2
                     hora: root.horaSistema
                     fecha: root.fechaSistema
                     ventanaTitulo: root.ventanaTitulo
@@ -91,9 +95,11 @@ ShellRoot {
                 }
 
                 StatusBar {
+                    id: statusBar
                     anchors.right: parent.right
                     anchors.rightMargin: 24
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: 0
                     porcentajeBateria: root.porcentajeBateria
                     modelRedes: root.redes
                     modelBrillo: root.brillo

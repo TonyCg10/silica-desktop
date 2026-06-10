@@ -4,9 +4,11 @@ import QtQuick.Window
 import Quickshell
 import Quickshell.Io
 import Quickshell._Window
+import "../components" as Components
 
 Item {
     id: root
+    implicitHeight: menuContainer.childrenRect.height
     required property var panelWindow
     required property rect screenGeometry
     property bool menuOpen: false
@@ -90,31 +92,27 @@ Item {
 
     onMenuOpenChanged: {
         if (menuOpen) wifiRefrescar()
-        else { wifiView = "list"; wifiPassword = ""; wifiConnectingSSID = ""; wifiSelectedSSID = "" }
     }
 
-    // ── WIFI MENU (PopupWindow) ──
-    PopupWindow {
-        id: wifiMenu
-        anchor.window: panelWindow
-        implicitWidth: 320
-        implicitHeight: 420
-        visible: root.menuOpen
-        color: "transparent"
-        anchor.rect.x: screenGeometry.width - width - 24
-        anchor.rect.y: 54
-
-        HoverHandler { onHoveredChanged: { if (root.menuOpen) root.popupHoverChanged(hovered) } }
-
+    // ── WIFI MENU (inline in MenuPill) ──
+    Item {
+        id: menuContainer
+        width: parent.width
+        implicitHeight: wifiListColumn.childrenRect.height
+        opacity: root.menuOpen ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+        visible: opacity > 0
+        
         Rectangle {
-            anchors.fill: parent
+            width: parent.width
+            implicitHeight: parent.implicitHeight
             radius: 12
-            color: "#1f2335"
-            border.color: "#2f334d"; border.width: 1
+            color: "transparent"
             clip: true
 
             Flickable {
-                anchors.fill: parent
+                width: parent.width
+                height: contentHeight
                 contentHeight: wifiListColumn.height
                 clip: true
                 interactive: true
@@ -124,36 +122,35 @@ Item {
                     id: wifiListColumn
                     width: parent.width; spacing: 0
 
-                    Item { width: 1; height: 12 }
-                    Row { x: 12; spacing: 8
-                        Text { text: "\uF0E9E"; color: "#7aa2f7"; font.pixelSize: 14; anchors.verticalCenter: parent.verticalCenter }
-                        Text { text: "Wi-Fi"; color: "#c0caf5"; font.pixelSize: 13; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
-                        Item { width: 1; height: 1 }
+                    Item { width: 1; height: 12; implicitHeight: 12 }
+                    Components.SectionHeader {
+                        icon: "\uF0E9E"
+                        title: "Wi-Fi"
 
-                        Rectangle {
-                            width: 36; height: 20; radius: 10
-                            color: wifiPowerOn ? "#7aa2f7" : "#2f334d"
-                            border.color: wifiPowerOn ? "#89b4fa" : "#3b4261"; border.width: 1
+                        Components.ToggleSwitch {
                             anchors.verticalCenter: parent.verticalCenter
-                            Rectangle {
-                                x: wifiPowerOn ? 18 : 2
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 16; height: 16; radius: 8; color: "#c0caf5"
-                                Behavior on x { NumberAnimation { duration: 120 } }
-                            }
-                            MouseArea { anchors.fill: parent; onClicked: wifiTogglePower() }
+                            checked: wifiPowerOn
+                            onToggled: wifiTogglePower()
                         }
 
                         Rectangle {
+                            id: wifiRefreshBtn
                             width: 24; height: 24; radius: 12
                             color: rh.containsMouse ? "#2f334d" : "transparent"
-                            Text { anchors.centerIn: parent; text: "\uF0452"; color: "#7aa2f7"; font.pixelSize: 11 }
+                            anchors.verticalCenter: parent.verticalCenter
+                            Components.SpinnerIcon {
+                                anchors.centerIn: parent
+                                spinning: wifiScanProc.running
+                                activeColor: "#9ece6a"
+                                idleColor: "#7aa2f7"
+                                size: 11
+                            }
                             MouseArea { id: rh; anchors.fill: parent; hoverEnabled: true; onClicked: wifiForceRescan() }
                         }
                     }
-                    Item { width: 1; height: 8 }
-                    Rectangle { width: parent.width - 24; height: 1; x: 12; color: "#2f334d" }
-                    Item { width: 1; height: 6 }
+                    Item { width: 1; height: 8; implicitHeight: 8 }
+                    Components.Separator { margins: 12 }
+                    Item { width: 1; height: 6; implicitHeight: 6 }
 
                     Repeater {
                         model: wifiModel
@@ -162,7 +159,7 @@ Item {
                             required property int intensidad
                             required property bool protegida
                             required property bool conectada
-                            width: parent.width; height: 32; radius: 6
+                            width: parent.width; height: 32; implicitHeight: 32; radius: 6
                             color: mw.containsMouse ? "#24283b" : "transparent"
 
                             MouseArea {
@@ -189,7 +186,7 @@ Item {
 
                     Item {
                         visible: wifiModel.count === 0 && wifiPowerOn
-                        width: parent.width; height: 60
+                        width: parent.width; height: 60; implicitHeight: 60
                         Column {
                             anchors.centerIn: parent; spacing: 4
                             Text { text: "\uF0E9C"; color: "#565f89"; font.pixelSize: 20; anchors.horizontalCenter: parent.horizontalCenter }
@@ -199,7 +196,7 @@ Item {
 
                     Item {
                         visible: !wifiPowerOn
-                        width: parent.width; height: 60
+                        width: parent.width; height: 60; implicitHeight: 60
                         Column {
                             anchors.centerIn: parent; spacing: 4
                             Text { text: "\uF0E9C"; color: "#565f89"; font.pixelSize: 20; anchors.horizontalCenter: parent.horizontalCenter }
@@ -207,7 +204,7 @@ Item {
                         }
                     }
 
-                    Item { width: 1; height: 8 }
+                    Item { width: 1; height: 8; implicitHeight: 8 }
                 }
             }
         }
@@ -230,10 +227,10 @@ Item {
         }
     }
 
-    // ── WIFI CONNECT DIALOG (FloatingWindow, closeable with Escape/click outside) ──
+    // ── WIFI CONNECT DIALOG (FloatingWindow, closeable with Escape only) ──
     FloatingWindow {
         id: wifiConnectDialog
-        visible: root.wifiView === "info" && root.menuOpen
+        visible: root.wifiView === "info"
         implicitWidth: 300
         implicitHeight: 240
         color: "#1f2335"
@@ -251,33 +248,37 @@ Item {
             clip: true
             focus: true
 
-            Keys.onEscapePressed: root.wifiView = "list"
+            Keys.onEscapePressed: {
+                root.wifiView = "list"
+                root.wifiPassword = ""
+                root.wifiConnectingSSID = ""
+                root.wifiSelectedSSID = ""
+            }
 
-            Item { width: 1; height: 12 }
+            Item { width: 1; height: 12; implicitHeight: 12 }
             Row { x: 12; spacing: 8
                 Rectangle {
                     width: 22; height: 22; radius: 11
-                    color: bckDialog.containsMouse ? "#2f334d" : "transparent"
+                    color: "transparent"
                     Text { anchors.centerIn: parent; text: "\uF02E2"; color: "#7aa2f7"; font.pixelSize: 11 }
-                    MouseArea { id: bckDialog; anchors.fill: parent; hoverEnabled: true; onClicked: root.wifiView = "list" }
                 }
                 Text { text: wifiSelectedSSID; color: "#c0caf5"; font.pixelSize: 13; font.bold: true; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; width: 220 }
             }
-            Item { width: 1; height: 8 }
-            Rectangle { width: parent.width - 24; height: 1; x: 12; color: "#2f334d" }
-            Item { width: 1; height: 8 }
+            Item { width: 1; height: 8; implicitHeight: 8 }
+            Components.Separator { margins: 12 }
+            Item { width: 1; height: 8; implicitHeight: 8 }
 
             Row { x: 12; spacing: 6
                 Text { text: iconoWifi(wifiSelectedSignal); color: "#7aa2f7"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
                 Text { text: wifiSelectedSignal + "%"; color: "#c0caf5"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
             }
-            Item { width: 1; height: 6 }
+            Item { width: 1; height: 6; implicitHeight: 6 }
             Row { x: 12; spacing: 6
                 Text { text: "\uF023"; color: "#565f89"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
                 Text { text: wifiSelectedSecurity; color: "#787c99"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
             }
             Item { width: 1; height: 10 }
-            Rectangle { width: parent.width - 24; height: 1; x: 12; color: "#2f334d" }
+            Components.Separator { margins: 12 }
             Item { width: 1; height: 10 }
 
             Rectangle {
@@ -289,7 +290,7 @@ Item {
                     Text { text: "Desconectar"; color: "#f7768e"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
                 }
                 MouseArea { anchors.fill: parent; hoverEnabled: true
-                    onClicked: { wifiDesconectar(); root.wifiView = "list" }
+                    onClicked: { wifiDesconectar() }
                 }
             }
             Item { visible: modeloWifiConectado !== "" && modeloWifiConectado.ssid === wifiSelectedSSID; width: 1; height: 8 }
@@ -325,16 +326,24 @@ Item {
                         MouseArea { id: tb; anchors.fill: parent; hoverEnabled: true; onClicked: wifiShowPassword = !wifiShowPassword }
                     }
                 }
-                Item { width: 1; height: 8 }
+                Item { width: 1; height: 8; implicitHeight: 8 }
 
                 Rectangle {
                     x: 12; width: parent.width - 24; height: 32; radius: 6
                     color: "#7aa2f7"; opacity: enabled ? 1 : 0.5
                     enabled: wifiPassword.length > 0 && wifiConnectingSSID === ""
-                    Text {
-                        anchors.centerIn: parent
-                        text: wifiConnectingSSID !== "" ? "Conectando..." : "Conectar"
-                        color: "#1f2335"; font.pixelSize: 12; font.bold: true
+                    Row {
+                        anchors.centerIn: parent; spacing: 6
+                        Components.SpinnerIcon {
+                            visible: wifiConnectingSSID !== ""
+                            spinning: wifiConnectingSSID !== ""
+                            idleColor: "#1f2335"; activeColor: "#1f2335"
+                            size: 12
+                        }
+                        Text {
+                            text: wifiConnectingSSID !== "" ? "Conectando..." : "Conectar"
+                            color: "#1f2335"; font.pixelSize: 12; font.bold: true
+                        }
                     }
                     MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: connectWifi() }
                 }
@@ -344,10 +353,18 @@ Item {
                 visible: wifiSelectedSecurity === "Abierta" && (modeloWifiConectado === "" || modeloWifiConectado.ssid !== wifiSelectedSSID)
                 x: 12; width: parent.width - 24; height: 32; radius: 6
                 color: "#7aa2f7"
-                Text {
-                    anchors.centerIn: parent
-                    text: wifiConnectingSSID !== "" ? "Conectando..." : "Conectar"
-                    color: "#1f2335"; font.pixelSize: 12; font.bold: true
+                Row {
+                    anchors.centerIn: parent; spacing: 6
+                    Components.SpinnerIcon {
+                        visible: wifiConnectingSSID !== ""
+                        spinning: wifiConnectingSSID !== ""
+                        idleColor: "#1f2335"; activeColor: "#1f2335"
+                        size: 12
+                    }
+                    Text {
+                        text: wifiConnectingSSID !== "" ? "Conectando..." : "Conectar"
+                        color: "#1f2335"; font.pixelSize: 12; font.bold: true
+                    }
                 }
                 MouseArea {
                     anchors.fill: parent; hoverEnabled: true

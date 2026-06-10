@@ -4,6 +4,7 @@ Item {
     id: root
     property real value: 0.5
     property color accentColor: "#7aa2f7"
+    property alias pressed: mouseArea.pressed
     signal moved(real newValue)
 
     implicitWidth: 200
@@ -33,10 +34,13 @@ Item {
 
     // Interaction area
     MouseArea {
+        id: mouseArea
         anchors.fill: parent
         onPositionChanged: mouse => {
-            var newValue = Math.max(0, Math.min(1, mouse.x / parent.width))
-            root.moved(newValue)
+            if (pressed) {
+                var newValue = Math.max(0, Math.min(1, mouse.x / parent.width))
+                root.moved(newValue)
+            }
         }
         onClicked: mouse => {
             var newValue = Math.max(0, Math.min(1, mouse.x / parent.width))
@@ -49,3 +53,4 @@ Item {
         }
     }
 }
+

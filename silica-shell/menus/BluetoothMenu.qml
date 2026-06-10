@@ -3,9 +3,11 @@ import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import Quickshell._Window
+import "../components" as Components
 
 Item {
     id: root
+    implicitHeight: menuContainer.childrenRect.height
     required property var panelWindow
     required property rect screenGeometry
     property bool menuOpen: false
@@ -100,20 +102,17 @@ Item {
         btRemoveProc.running = true
     }
 
-    PopupWindow {
-        id: btMenu
-        anchor.window: panelWindow
-        implicitWidth: 320
-        implicitHeight: 420
-        visible: root.menuOpen
-        color: "transparent"
-        anchor.rect.x: screenGeometry.width - width - 24
-        anchor.rect.y: 54
-
-        HoverHandler { onHoveredChanged: { if (root.menuOpen) root.popupHoverChanged(hovered) } }
-
+    Item {
+        id: menuContainer
+        width: parent.width
+        implicitHeight: contentColumn.childrenRect.height
+        opacity: root.menuOpen ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+        visible: opacity > 0
+        
         Rectangle {
-            anchors.fill: parent
+            width: parent.width
+            implicitHeight: parent.implicitHeight
             radius: 12
             color: "#1f2335"
             border.color: "#2f334d"; border.width: 1
@@ -122,7 +121,8 @@ Item {
             Keys.onEscapePressed: root.closeRequested()
 
             Flickable {
-                anchors.fill: parent
+                width: parent.width
+                height: contentHeight
                 contentHeight: contentColumn.height
                 clip: true
                 interactive: true
@@ -132,36 +132,35 @@ Item {
                     id: contentColumn
                     width: parent.width; spacing: 0
 
-                    Item { width: 1; height: 12 }
-                    Row { x: 16; spacing: 10
-                        Text { text: "\uF0C2F"; color: "#7aa2f7"; font.pixelSize: 16; anchors.verticalCenter: parent.verticalCenter }
-                        Text { text: "Bluetooth"; color: "#c0caf5"; font.pixelSize: 14; font.bold: true; anchors.verticalCenter: parent.verticalCenter }
+                    Item { width: 1; height: 12; implicitHeight: 12 }
+                    Components.SectionHeader {
+                        icon: "\uF0C2F"
+                        title: "Bluetooth"
 
-                        Rectangle {
-                            width: 40; height: 22; radius: 11
-                            color: btPowerOn ? "#7dcfff" : "#2f334d"
-                            border.color: btPowerOn ? "#89dceb" : "#3b4261"; border.width: 1
+                        Components.ToggleSwitch {
                             anchors.verticalCenter: parent.verticalCenter
-                            Rectangle {
-                                x: btPowerOn ? 20 : 2
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 18; height: 18; radius: 9; color: "#c0caf5"
-                                Behavior on x { NumberAnimation { duration: 120 } }
-                            }
-                            MouseArea { anchors.fill: parent; onClicked: btTogglePower() }
+                            checked: btPowerOn
+                            onToggled: btTogglePower()
                         }
 
                         Rectangle {
                             width: 28; height: 28; radius: 14
                             color: refreshBt.containsMouse ? "#2f334d" : "transparent"
                             border.color: refreshBt.containsMouse ? "#3b4261" : "transparent"
-                            Text { anchors.centerIn: parent; text: btScanning ? "\uF0453" : "\uF0452"; color: "#7dcfff"; font.pixelSize: 12; rotation: btScanning ? 0 : 0 }
+                            anchors.verticalCenter: parent.verticalCenter
+                            Components.SpinnerIcon {
+                                anchors.centerIn: parent
+                                spinning: btScanning
+                                activeColor: "#9ece6a"
+                                idleColor: "#7dcfff"
+                                size: 12
+                            }
                             MouseArea { id: refreshBt; anchors.fill: parent; hoverEnabled: true; onClicked: btForceRefresh() }
                         }
                     }
-                    Item { width: 1; height: 12 }
-                    Rectangle { width: parent.width - 32; height: 1; x: 16; color: "#2f334d" }
-                    Item { width: 1; height: 8 }
+                    Item { width: 1; height: 12; implicitHeight: 12 }
+                    Components.Separator { margins: 16 }
+                    Item { width: 1; height: 8; implicitHeight: 8 }
 
                     // New devices
                     Repeater {
@@ -171,7 +170,7 @@ Item {
                             required property string name
                             required property bool connected
                             required property bool paired
-                            width: contentColumn.width; height: 40; radius: 8
+                            width: contentColumn.width; height: 40; implicitHeight: 40; radius: 8
                             color: "#7aa2f711"; border.color: "#7aa2f7"; border.width: 1
 
                             Row { x: 12; spacing: 8; anchors.verticalCenter: parent.verticalCenter
@@ -201,7 +200,7 @@ Item {
                             required property string name
                             required property bool connected
                             required property bool paired
-                            width: contentColumn.width; height: 36; radius: 6
+                            width: contentColumn.width; height: 36; implicitHeight: 36; radius: 6
                             color: devMa.containsMouse ? "#24283b" : "transparent"
 
                             MouseArea { id: devMa; anchors.fill: parent; hoverEnabled: true }
@@ -230,8 +229,23 @@ Item {
                                 Rectangle {
                                     visible: !connected
                                     width: 24; height: 24; radius: 12
-                                    color: connBt.containsMouse ? "#9ece6a33" : "transparent"
-                                    Text { anchors.centerIn: parent; text: "\uF0647"; color: "#9ece6a"; font.pixelSize: 11 }
+                                    color: btConnectingMAC === mac ? "transparent" : (connBt.containsMouse ? "#9ece6a33" : "transparent")
+                                    Item {
+                                        anchors.centerIn: parent; width: 14; height: 14
+                                        Components.SpinnerIcon {
+                                            anchors.centerIn: parent
+                                            spinning: btConnectingMAC === mac
+                                            visible: btConnectingMAC === mac
+                                            activeColor: "#9ece6a"
+                                            size: 11
+                                        }
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "\uF0647"
+                                            color: "#9ece6a"; font.pixelSize: 11
+                                            visible: btConnectingMAC !== mac
+                                        }
+                                    }
                                     MouseArea { id: connBt; anchors.fill: parent; hoverEnabled: true; onClicked: btConnect(mac) }
                                 }
 
@@ -247,7 +261,7 @@ Item {
 
                     Item {
                         visible: btModel.count === 0 && btPowerOn && !btScanning
-                        width: parent.width; height: 60
+                        width: parent.width; height: 60; implicitHeight: 60
                         Column {
                             anchors.centerIn: parent; spacing: 4
                             Text { text: "\uF0C30"; color: "#565f89"; font.pixelSize: 20; anchors.horizontalCenter: parent.horizontalCenter }
@@ -257,7 +271,7 @@ Item {
 
                     Item {
                         visible: !btPowerOn
-                        width: parent.width; height: 60
+                        width: parent.width; height: 60; implicitHeight: 60
                         Column {
                             anchors.centerIn: parent; spacing: 4
                             Text { text: "\uF0C30"; color: "#565f89"; font.pixelSize: 20; anchors.horizontalCenter: parent.horizontalCenter }
@@ -265,7 +279,7 @@ Item {
                         }
                     }
 
-                    Item { width: 1; height: 8 }
+                    Item { width: 1; height: 8; implicitHeight: 8 }
                 }
             }
         }
