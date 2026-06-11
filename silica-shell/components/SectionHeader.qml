@@ -4,7 +4,7 @@ Item {
     id: root
     property string icon: ""
     property string title: ""
-    property color iconColor: "#7aa2f7"
+    property color iconColor: "#ffffff"
 
     default property alias actions: actionsSlot.data
 
@@ -22,6 +22,7 @@ Item {
         Text {
             text: root.icon
             color: root.iconColor
+            font.family: "Phosphor-Bold"
             font.pixelSize: 16
             anchors.verticalCenter: parent.verticalCenter
         }

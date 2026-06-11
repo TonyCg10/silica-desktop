@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell.Io
+import "../components" as Components
 import "../menus" as Menus
 
 Item {
@@ -29,16 +30,16 @@ Item {
     }
 
     function weatherIcon(code) {
-        if (code === 0) return "󰖨"
-        if (code <= 3) return "󰖐"
-        if (code <= 49) return "󰖑"
-        if (code <= 59) return "󰖗"
-        if (code <= 69) return "󰖖"
-        if (code <= 77) return "󰖏"
-        if (code <= 82) return "󰖗"
-        if (code <= 86) return "󰖏"
-        if (code <= 99) return "󰖓"
-        return "󰖐"
+        if (code === 0) return Components.IconSystem.weather.clear
+        if (code <= 3) return Components.IconSystem.weather.partlyCloudy
+        if (code <= 49) return Components.IconSystem.weather.cloudy
+        if (code <= 59) return Components.IconSystem.weather.rain
+        if (code <= 69) return Components.IconSystem.weather.snow
+        if (code <= 77) return Components.IconSystem.weather.snow
+        if (code <= 82) return Components.IconSystem.weather.rain
+        if (code <= 86) return Components.IconSystem.weather.heavyRain
+        if (code <= 99) return Components.IconSystem.weather.tornado
+        return Components.IconSystem.weather.cloudy
     }
 
     function refresh() {
@@ -53,8 +54,9 @@ Item {
         id: setupIcon
         visible: !root.locationSet
         anchors.centerIn: parent
-        text: "󰅟"
-        color: "#7aa2f7"
+        text: Components.IconSystem.action.settings
+        color: "#ffffff"
+        font.family: Components.IconSystem.fontFamily
         font.pixelSize: 15
     }
 
@@ -75,7 +77,8 @@ Item {
         anchors.left: tempText.visible ? tempText.right : parent.left
         anchors.leftMargin: tempText.visible ? 4 : 0
         text: weatherIcon(root.condition)
-        color: "#7aa2f7"
+        color: "#ffffff"
+        font.family: Components.IconSystem.fontFamily
         font.pixelSize: 15
     }
 

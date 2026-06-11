@@ -28,11 +28,11 @@ Item {
 
     Component.onDestruction: { _destroying = true }
 
-    function iconoWifi(intensidad) {
-        if (intensidad >= 75) return "\uF0E9E"
-        if (intensidad >= 50) return "\uF0E96"
-        if (intensidad >= 25) return "\uF0E8D"
-        return "\uF0929"
+    function wifiIcono(intensidad) {
+        if (intensidad >= 75) return Components.IconSystem.wifi.signal3
+        if (intensidad >= 50) return Components.IconSystem.wifi.signal2
+        if (intensidad >= 25) return Components.IconSystem.wifi.signal1
+        return Components.IconSystem.wifi.signal0
     }
 
     property var modeloWifiConectado: {
@@ -124,7 +124,8 @@ Item {
 
                     Item { width: 1; height: 12; implicitHeight: 12 }
                     Components.SectionHeader {
-                        icon: "\uF0E9E"
+                        icon: Components.IconSystem.wifi.on
+                        iconColor: "#ffffff"
                         title: "Wi-Fi"
 
                         Components.ToggleSwitch {
@@ -141,8 +142,8 @@ Item {
                             Components.SpinnerIcon {
                                 anchors.centerIn: parent
                                 spinning: wifiScanProc.running
-                                activeColor: "#9ece6a"
-                                idleColor: "#7aa2f7"
+                                activeColor: "#ffffff"
+                                idleColor: "#ffffff"
                                 size: 11
                             }
                             MouseArea { id: rh; anchors.fill: parent; hoverEnabled: true; onClicked: wifiForceRescan() }
@@ -175,10 +176,10 @@ Item {
                             }
 
                             Row { x: 10; spacing: 8; anchors.verticalCenter: parent.verticalCenter
-                                Text { text: iconoWifi(intensidad); color: modeloWifiConectado && modeloWifiConectado.ssid === ssid ? "#9ece6a" : "#787c99"; font.pixelSize: 12 }
+                                Text { text: wifiIcono(intensidad); color: "#ffffff"; font.pixelSize: 12; font.family: Components.IconSystem.fontFamily }
                                 Text { text: ssid; color: modeloWifiConectado && modeloWifiConectado.ssid === ssid ? "#c0caf5" : "#787c99"; font.pixelSize: 12; font.bold: modeloWifiConectado && modeloWifiConectado.ssid === ssid }
                                 Item { width: 1; height: 1 }
-                                Text { text: protegida ? "\uF023" : ""; color: "#565f89"; font.pixelSize: 10; anchors.verticalCenter: parent.verticalCenter }
+                                Text { text: protegida ? Components.IconSystem.wifi.lock : ""; color: "#ffffff"; font.pixelSize: 10; font.family: Components.IconSystem.fontFamily; anchors.verticalCenter: parent.verticalCenter }
                                 Text { text: conectada ? "\u25CF" : ""; color: "#9ece6a"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
                             }
                         }
@@ -189,8 +190,8 @@ Item {
                         width: parent.width; height: 60; implicitHeight: 60
                         Column {
                             anchors.centerIn: parent; spacing: 4
-                            Text { text: "\uF0E9C"; color: "#565f89"; font.pixelSize: 20; anchors.horizontalCenter: parent.horizontalCenter }
-                            Text { text: "Sin redes"; color: "#565f89"; font.pixelSize: 11 }
+                            Text { text: Components.IconSystem.wifi.on; color: "#ffffff"; font.pixelSize: 20; font.family: Components.IconSystem.fontFamily; anchors.horizontalCenter: parent.horizontalCenter }
+                            Text { text: "Sin redes"; color: "#ffffff"; font.pixelSize: 11 }
                         }
                     }
 
@@ -199,7 +200,7 @@ Item {
                         width: parent.width; height: 60; implicitHeight: 60
                         Column {
                             anchors.centerIn: parent; spacing: 4
-                            Text { text: "\uF0E9C"; color: "#565f89"; font.pixelSize: 20; anchors.horizontalCenter: parent.horizontalCenter }
+                            Text { text: Components.IconSystem.wifi.on; color: "#ffffff"; font.pixelSize: 20; font.family: Components.IconSystem.fontFamily; anchors.horizontalCenter: parent.horizontalCenter }
                             Text { text: "Wi-Fi apagado"; color: "#565f89"; font.pixelSize: 11 }
                         }
                     }
@@ -260,7 +261,7 @@ Item {
                 Rectangle {
                     width: 22; height: 22; radius: 11
                     color: "transparent"
-                    Text { anchors.centerIn: parent; text: "\uF02E2"; color: "#7aa2f7"; font.pixelSize: 11 }
+                    Text { anchors.centerIn: parent; text: Components.IconSystem.action.info; color: "#ffffff"; font.pixelSize: 11; font.family: Components.IconSystem.fontFamily }
                 }
                 Text { text: wifiSelectedSSID; color: "#c0caf5"; font.pixelSize: 13; font.bold: true; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; width: 220 }
             }
@@ -269,12 +270,12 @@ Item {
             Item { width: 1; height: 8; implicitHeight: 8 }
 
             Row { x: 12; spacing: 6
-                Text { text: iconoWifi(wifiSelectedSignal); color: "#7aa2f7"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: wifiIcono(wifiSelectedSignal); color: "#ffffff"; font.pixelSize: 12; font.family: Components.IconSystem.fontFamily; anchors.verticalCenter: parent.verticalCenter }
                 Text { text: wifiSelectedSignal + "%"; color: "#c0caf5"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
             }
             Item { width: 1; height: 6; implicitHeight: 6 }
             Row { x: 12; spacing: 6
-                Text { text: "\uF023"; color: "#565f89"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: Components.IconSystem.wifi.lock; color: "#ffffff"; font.pixelSize: 11; font.family: Components.IconSystem.fontFamily; anchors.verticalCenter: parent.verticalCenter }
                 Text { text: wifiSelectedSecurity; color: "#787c99"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
             }
             Item { width: 1; height: 10 }
@@ -286,7 +287,7 @@ Item {
                 x: 12; width: parent.width - 24; height: 32; radius: 6
                 color: "#f7768e22"; border.color: "#f7768e"; border.width: 1
                 Row { x: 10; spacing: 6; anchors.verticalCenter: parent.verticalCenter
-                    Text { text: "\uF0344"; color: "#f7768e"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: Components.IconSystem.action.disconnect; color: "#ffffff"; font.pixelSize: 12; font.family: Components.IconSystem.fontFamily; anchors.verticalCenter: parent.verticalCenter }
                     Text { text: "Desconectar"; color: "#f7768e"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
                 }
                 MouseArea { anchors.fill: parent; hoverEnabled: true
@@ -322,7 +323,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 22; height: 22; radius: 11
                         color: tb.containsMouse ? "#2f334d" : "transparent"
-                        Text { anchors.centerIn: parent; text: wifiShowPassword ? "\uF06E6" : "\uF06E2"; color: "#7aa2f7"; font.pixelSize: 11 }
+                        Text { anchors.centerIn: parent; text: wifiShowPassword ? Components.IconSystem.action.eye : Components.IconSystem.action.eyeSlash; color: "#ffffff"; font.pixelSize: 11; font.family: Components.IconSystem.fontFamily }
                         MouseArea { id: tb; anchors.fill: parent; hoverEnabled: true; onClicked: wifiShowPassword = !wifiShowPassword }
                     }
                 }

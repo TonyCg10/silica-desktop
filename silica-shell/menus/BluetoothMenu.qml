@@ -134,7 +134,8 @@ Item {
 
                     Item { width: 1; height: 12; implicitHeight: 12 }
                     Components.SectionHeader {
-                        icon: "\uF0C2F"
+                        icon: Components.IconSystem.bluetooth.on
+                        iconColor: "#ffffff"
                         title: "Bluetooth"
 
                         Components.ToggleSwitch {
@@ -151,8 +152,8 @@ Item {
                             Components.SpinnerIcon {
                                 anchors.centerIn: parent
                                 spinning: btScanning
-                                activeColor: "#9ece6a"
-                                idleColor: "#7dcfff"
+                                activeColor: "#ffffff"
+                                idleColor: "#ffffff"
                                 size: 12
                             }
                             MouseArea { id: refreshBt; anchors.fill: parent; hoverEnabled: true; onClicked: btForceRefresh() }
@@ -174,7 +175,7 @@ Item {
                             color: "#7aa2f711"; border.color: "#7aa2f7"; border.width: 1
 
                             Row { x: 12; spacing: 8; anchors.verticalCenter: parent.verticalCenter
-                                Text { text: "\uF0C2F"; color: "#7aa2f7"; font.pixelSize: 14; anchors.verticalCenter: parent.verticalCenter }
+                                Text { text: Components.IconSystem.bluetooth.on; color: "#ffffff"; font.pixelSize: 14; font.family: Components.IconSystem.fontFamily; anchors.verticalCenter: parent.verticalCenter }
                                 Column { anchors.verticalCenter: parent.verticalCenter; spacing: 1
                                     Text { text: name; color: "#c0caf5"; font.pixelSize: 12; font.bold: true }
                                     Text { text: "Nuevo dispositivo"; color: "#7aa2f7"; font.pixelSize: 10 }
@@ -186,7 +187,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 28; height: 28; radius: 14
                                 color: "#7aa2f7"
-                                Text { anchors.centerIn: parent; text: "\uF0647"; color: "#1f2335"; font.pixelSize: 12 }
+                                Text { anchors.centerIn: parent; text: Components.IconSystem.action.connect; color: "#ffffff"; font.pixelSize: 12; font.family: Components.IconSystem.fontFamily }
                                 MouseArea { anchors.fill: parent; onClicked: btConnect(mac) }
                             }
                         }
@@ -206,7 +207,7 @@ Item {
                             MouseArea { id: devMa; anchors.fill: parent; hoverEnabled: true }
 
                             Row { x: 12; spacing: 8; anchors.verticalCenter: parent.verticalCenter
-                                Text { text: connected ? "\uF0C2F" : "\uF0C30"; color: connected ? "#9ece6a" : "#787c99"; font.pixelSize: 14 }
+                                Text { text: connected ? Components.IconSystem.bluetooth.connected : Components.IconSystem.bluetooth.disconnected; color: "#ffffff"; font.pixelSize: 14; font.family: Components.IconSystem.fontFamily }
                                 Column { anchors.verticalCenter: parent.verticalCenter; spacing: 1
                                     Text { text: name; color: connected ? "#c0caf5" : "#787c99"; font.pixelSize: 12; font.bold: connected }
                                     Text { text: connected ? "Conectado" : (paired ? "Emparejado" : mac); color: "#565f89"; font.pixelSize: 10 }
@@ -222,7 +223,7 @@ Item {
                                     visible: connected
                                     width: 24; height: 24; radius: 12
                                     color: discBt.containsMouse ? "#f7768e33" : "transparent"
-                                    Text { anchors.centerIn: parent; text: "\uF0344"; color: "#f7768e"; font.pixelSize: 11 }
+                                    Text { anchors.centerIn: parent; text: Components.IconSystem.action.disconnect; color: "#ffffff"; font.pixelSize: 11; font.family: Components.IconSystem.fontFamily }
                                     MouseArea { id: discBt; anchors.fill: parent; hoverEnabled: true; onClicked: btDisconnect(mac) }
                                 }
 
@@ -241,8 +242,9 @@ Item {
                                         }
                                         Text {
                                             anchors.centerIn: parent
-                                            text: "\uF0647"
-                                            color: "#9ece6a"; font.pixelSize: 11
+                                            text: Components.IconSystem.action.connect
+                                            color: "#ffffff"; font.pixelSize: 11
+                                            font.family: Components.IconSystem.fontFamily
                                             visible: btConnectingMAC !== mac
                                         }
                                     }
@@ -252,7 +254,7 @@ Item {
                                 Rectangle {
                                     width: 24; height: 24; radius: 12
                                     color: forgetBt.containsMouse ? "#f7768e33" : "transparent"
-                                    Text { anchors.centerIn: parent; text: "\uF05E6"; color: "#f7768e"; font.pixelSize: 11 }
+                                    Text { anchors.centerIn: parent; text: Components.IconSystem.action.forget; color: "#ffffff"; font.pixelSize: 11; font.family: Components.IconSystem.fontFamily }
                                     MouseArea { id: forgetBt; anchors.fill: parent; hoverEnabled: true; onClicked: btForget(mac) }
                                 }
                             }
@@ -264,8 +266,8 @@ Item {
                         width: parent.width; height: 60; implicitHeight: 60
                         Column {
                             anchors.centerIn: parent; spacing: 4
-                            Text { text: "\uF0C30"; color: "#565f89"; font.pixelSize: 20; anchors.horizontalCenter: parent.horizontalCenter }
-                            Text { text: "Sin dispositivos"; color: "#565f89"; font.pixelSize: 11 }
+                            Text { text: Components.IconSystem.bluetooth.on; color: "#ffffff"; font.pixelSize: 20; font.family: Components.IconSystem.fontFamily; anchors.horizontalCenter: parent.horizontalCenter }
+                            Text { text: "Sin dispositivos"; color: "#ffffff"; font.pixelSize: 11 }
                         }
                     }
 
@@ -274,7 +276,7 @@ Item {
                         width: parent.width; height: 60; implicitHeight: 60
                         Column {
                             anchors.centerIn: parent; spacing: 4
-                            Text { text: "\uF0C30"; color: "#565f89"; font.pixelSize: 20; anchors.horizontalCenter: parent.horizontalCenter }
+                            Text { text: Components.IconSystem.bluetooth.on; color: "#ffffff"; font.pixelSize: 20; font.family: Components.IconSystem.fontFamily; anchors.horizontalCenter: parent.horizontalCenter }
                             Text { text: "Bluetooth apagado"; color: "#565f89"; font.pixelSize: 11 }
                         }
                     }

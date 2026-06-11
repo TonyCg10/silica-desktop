@@ -114,7 +114,8 @@ ShellRoot {
                 WorkspaceBar {
                     anchors.left: parent.left
                     anchors.leftMargin: 24
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: (50 - height) / 2
                     monitorWorkspaces: root.todosLosWorkspaces
                     activeWorkspace: root.workspaces[modelData.name] ?? 0
                     ventanasPorWorkspace: root.ventanasPorWorkspace

@@ -1,4 +1,5 @@
 import QtQuick
+import "../components" as Components
 
 Row {
     id: control
@@ -10,39 +11,7 @@ Row {
     spacing: 8
 
     function getAppIcon(clientClass) {
-        if (!clientClass) return "";
-        let cls = clientClass.toLowerCase();
-        let icons = {
-            "firefox": "󰈹",
-            "chromium": "󰈹",
-            "chrome": "󰈹",
-            "kitty": "󰄛",
-            "alacritty": "󰄛",
-            "foot": "󰄛",
-            "terminal": "󰄛",
-            "code": "󰨞",
-            "visual-studio-code": "󰨞",
-            "vscodium": "󰨞",
-            "thunar": "󰉋",
-            "nemo": "󰉋",
-            "dolphin": "󰉋",
-            "nautilus": "󰉋",
-            "discord": "󰙯",
-            "spotify": "󰓇",
-            "steam": "󰓓",
-            "games": "󰊗",
-            "vlc": "󰕼",
-            "mpv": "󰕼",
-            "gimp": "󰄄",
-            "obsidian": "󱓧",
-            "mailspring": "󰇮",
-            "thunderbird": "󰇮"
-        };
-        if (icons[cls]) return icons[cls];
-        for (let key in icons) {
-            if (cls.indexOf(key) !== -1) return icons[key];
-        }
-        return "";
+        return Components.IconSystem.getAppIcon(clientClass)
     }
 
     function isIconPath(icon) {
@@ -51,8 +20,9 @@ Row {
     }
 
     function wsHas(wsId) {
-        let info = ventanasPorWorkspace ? ventanasPorWorkspace[wsId] : null;
-        return info !== null && info.clase !== "";
+        if (!ventanasPorWorkspace) return false;
+        let info = ventanasPorWorkspace[wsId];
+        return !!(info && info.clase !== "");
     }
 
     function iconFor(wsId) {
@@ -73,7 +43,7 @@ Row {
                 readonly property bool active: control.activeWorkspace == modelData
                 readonly property bool hasWin: control.wsHas(modelData)
                 readonly property string ico: control.iconFor(modelData)
-                readonly property string fallback: hasWin ? control.getAppIcon(ventanasPorWorkspace[modelData].clase) : ""
+                readonly property string fallback: hasWin && ventanasPorWorkspace[modelData] ? control.getAppIcon(ventanasPorWorkspace[modelData].clase) : ""
 
                 width: 24
                 height: 24
@@ -102,7 +72,8 @@ Row {
                 Text {
                     anchors.centerIn: parent
                     text: fallback
-                    color: active ? "#7aa2f7" : "#c0caf5"
+                    color: "#ffffff"
+                    font.family: Components.IconSystem.fontFamily
                     font.pixelSize: 13
                     visible: hasWin && (ico.length === 0 || img.status !== Image.Ready)
                 }

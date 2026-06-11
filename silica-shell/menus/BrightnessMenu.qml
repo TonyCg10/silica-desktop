@@ -64,9 +64,9 @@ Item {
                     // ── BRIGHTNESS section header ──
                     Item { width: 1; implicitHeight: 6 }
                     Components.SectionHeader {
-                        icon: "\uF0CFF"
+                        icon: Components.IconSystem.brightness.high
+                        iconColor: "#ffffff"
                         title: "Brillo"
-                        iconColor: "#e0af68"
                     }
                     Item { width: 1; implicitHeight: 6 }
 
@@ -102,9 +102,9 @@ Item {
                                 Components.SpinnerIcon {
                                     anchors.verticalCenter: parent.verticalCenter
                                     spinning: cmdSetBrillo.running
-                                    icon: model.nombre.indexOf("DP-") === 0 ? "\uF10F0" : model.nombre.indexOf("HDMI-") === 0 ? "\uF1387" : "\uF0CFF"
-                                    activeColor: "#e0af68"
-                                    idleColor: "#c0caf5"
+                                    icon: model.nombre.indexOf("DP-") === 0 ? Components.IconSystem.brightness.displayPort : (model.nombre.indexOf("HDMI-") === 0 ? Components.IconSystem.brightness.hdmi : Components.IconSystem.brightness.generic)
+                                    activeColor: "#ffffff"
+                                    idleColor: "#ffffff"
                                     size: 11
                                 }
                             Components.SliderWidget {

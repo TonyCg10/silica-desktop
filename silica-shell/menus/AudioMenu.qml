@@ -91,7 +91,8 @@ Item {
                     Item { width: 1; implicitHeight: 12 }
                     Components.SectionHeader {
                         anchors.leftMargin: 12
-                        icon: volumenMute ? "\uF0D59" : "\uF0D5A"
+                        icon: volumenMute ? Components.IconSystem.audio.muted : Components.IconSystem.audio.volumeHigh
+                        iconColor: "#ffffff"
                         title: "SALIDAS"
                     }
                     Item { width: 1; implicitHeight: 4 }
@@ -126,8 +127,9 @@ Item {
                                 Row {
                                     width: parent.width; spacing: 4
                                     Text {
-                                        text: model.predeterminado ? "\uF03ED" : ""
+                                        text: model.predeterminado ? Components.IconSystem.audio.checkmark : ""
                                         color: "#7aa2f7"; font.pixelSize: 11
+                                        font.family: Components.IconSystem.fontFamily
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                     Text {
@@ -138,15 +140,16 @@ Item {
                                         elide: Text.ElideRight
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
-                                    Rectangle {
-                                        width: 22; height: 22; radius: 11
-                                        color: salidaMuteArea.containsMouse ? "#2f334d" : "transparent"
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: salidaItem.devMuted ? "\uF075A" : "\uF06A0"
-                                            color: salidaItem.devMuted ? "#f7768e" : "#7aa2f7"
-                                            font.pixelSize: 11
+                                        Rectangle {
+                                            width: 22; height: 22; radius: 11
+                                            color: salidaMuteArea.containsMouse ? "#2f334d" : "transparent"
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: salidaItem.devMuted ? Components.IconSystem.audio.muted : Components.IconSystem.audio.volumeHigh
+                                                color: "#ffffff"
+                                                font.family: Components.IconSystem.fontFamily
+                                                font.pixelSize: 11
                                         }
                                         MouseArea {
                                             id: salidaMuteArea; anchors.fill: parent; hoverEnabled: true
@@ -205,7 +208,8 @@ Item {
                     // ── ENTRADAS section header ──
                     Components.SectionHeader {
                         anchors.leftMargin: 12
-                        icon: "\uF03E5"
+                        icon: Components.IconSystem.audio.mic
+                        iconColor: "#ffffff"
                         title: "ENTRADAS"
                     }
                     Item { width: 1; implicitHeight: 4 }
@@ -240,8 +244,9 @@ Item {
                                 Row {
                                     width: parent.width; spacing: 4
                                     Text {
-                                        text: model.predeterminado ? "\uF03ED" : ""
-                                        color: "#7aa2f7"; font.pixelSize: 11
+                                        text: model.predeterminado ? Components.IconSystem.audio.checkmark : ""
+                                        color: "#ffffff"; font.pixelSize: 11
+                                        font.family: Components.IconSystem.fontFamily
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                     Text {
@@ -252,15 +257,16 @@ Item {
                                         elide: Text.ElideRight
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
-                                    Rectangle {
-                                        width: 22; height: 22; radius: 11
-                                        color: entradaMuteArea.containsMouse ? "#2f334d" : "transparent"
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: entradaItem.devMuted ? "\uF075A" : "\uF06A0"
-                                            color: entradaItem.devMuted ? "#f7768e" : "#7aa2f7"
-                                            font.pixelSize: 11
+                                        Rectangle {
+                                            width: 22; height: 22; radius: 11
+                                            color: entradaMuteArea.containsMouse ? "#2f334d" : "transparent"
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: entradaItem.devMuted ? Components.IconSystem.audio.muted : Components.IconSystem.audio.volumeHigh
+                                                color: "#ffffff"
+                                                font.family: Components.IconSystem.fontFamily
+                                                font.pixelSize: 11
                                         }
                                         MouseArea {
                                             id: entradaMuteArea; anchors.fill: parent; hoverEnabled: true

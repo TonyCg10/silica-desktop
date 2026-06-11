@@ -36,8 +36,8 @@ Item {
                 anchors.margins: 12; spacing: 8
 
                     Components.SectionHeader {
-                        icon: porcentajeBateria >= 80 ? "\uF0E4D" : porcentajeBateria >= 50 ? "\uF0E4C" : porcentajeBateria >= 20 ? "\uF0E4A" : "\uF0E48"
-                        iconColor: porcentajeBateria <= 15 ? "#f7768e" : "#9ece6a"
+                        icon: porcentajeBateria >= 80 ? Components.IconSystem.battery.full : (porcentajeBateria >= 50 ? Components.IconSystem.battery.high : (porcentajeBateria >= 20 ? Components.IconSystem.battery.medium : (porcentajeBateria >= 5 ? Components.IconSystem.battery.low : Components.IconSystem.battery.critical)))
+                        iconColor: "#ffffff"
                         title: "Batería"
 
                         Text {

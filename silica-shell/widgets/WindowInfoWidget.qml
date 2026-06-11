@@ -1,4 +1,5 @@
 import QtQuick
+import "../components" as Components
 
 Row {
     id: root
@@ -16,38 +17,7 @@ Row {
     }
 
     function getAppIcon(clientClass) {
-        if (!clientClass) return "";
-        let cls = clientClass.toLowerCase();
-        let icons = {
-            "firefox": "󰈹",
-            "chromium": "󰈹",
-            "chrome": "󰈹",
-            "kitty": "󰄛",
-            "alacritty": "󰄛",
-            "foot": "󰄛",
-            "terminal": "󰄛",
-            "code": "󰨞",
-            "visual-studio-code": "󰨞",
-            "vscodium": "󰨞",
-            "thunar": "󰉋",
-            "nemo": "󰉋",
-            "dolphin": "󰉋",
-            "discord": "󰙯",
-            "spotify": "󰓇",
-            "steam": "󰓓",
-            "games": "󰊗",
-            "vlc": "󰕼",
-            "mpv": "󰕼",
-            "gimp": "󰄄",
-            "obsidian": "󱓧",
-            "mailspring": "󰇮",
-            "thunderbird": "󰇮"
-        };
-        if (icons[cls]) return icons[cls];
-        for (let key in icons) {
-            if (cls.indexOf(key) !== -1) return icons[key];
-        }
-        return "";
+        return Components.IconSystem.getAppIcon(clientClass)
     }
 
     function isIconPath(icon) {
@@ -73,7 +43,8 @@ Row {
         id: fallbackIcon
         anchors.verticalCenter: parent.verticalCenter
         text: getAppIcon(root.windowClass)
-        color: "#7aa2f7"
+        color: "#ffffff"
+        font.family: Components.IconSystem.fontFamily
         font.pixelSize: 15
         visible: !isIconPath(root.windowIcon) || windowIconItem.status !== Image.Ready
         font.capitalization: Font.AllLowercase

@@ -96,8 +96,9 @@ Item {
             onHoverExited:  root.pillExited()
 
             Text {
-                text: root.wifiPowerOn ? (root.modeloWifiConectado !== "" ? "\uE0E9E" : "\uE0E9C") : "\uE0E9C"
-                color: !root.wifiPowerOn ? "#3b4261" : (root.modeloWifiConectado !== "" ? "#9ece6a" : "#787c99")
+                text: Components.IconSystem.wifi.on
+                color: "#ffffff"
+                font.family: Components.IconSystem.fontFamily
                 font.pixelSize: 14
                 opacity: wifiPill.exp ? 0 : 1
                 Behavior on opacity { NumberAnimation { duration: 130 } }
@@ -127,8 +128,10 @@ Item {
             onHoverExited:  root.pillExited()
 
             Text {
-                text: root.btPowerOn ? "\uF0C2F" : "\uF0C30"
-                color: root.btPowerOn ? "#7dcfff" : "#3b4261"; font.pixelSize: 14
+                text: root.btPowerOn ? Components.IconSystem.bluetooth.on : Components.IconSystem.bluetooth.off
+                color: "#ffffff"
+                font.family: Components.IconSystem.fontFamily
+                font.pixelSize: 14
                 opacity: btPill.exp ? 0 : 1
                 Behavior on opacity { NumberAnimation { duration: 130 } }
                 anchors.top: parent.top; anchors.topMargin: (34 - contentHeight) / 2
@@ -159,8 +162,10 @@ Item {
             onHoverExited:  root.pillExited()
 
             Text {
-                text: root.volumenMute ? "\uF075A" : root.volumenActual > 0.5 ? "\uF0D5A" : root.volumenActual > 0.1 ? "\uF0D56" : "\uF0D52"
-                color: "#7aa2f7"; font.pixelSize: 14
+                text: root.volumenMute ? Components.IconSystem.audio.muted : (root.volumenActual > 0.65 ? Components.IconSystem.audio.volumeHigh : (root.volumenActual > 0.30 ? Components.IconSystem.audio.volumeMid : Components.IconSystem.audio.volumeLow))
+                color: "#ffffff"
+                font.family: Components.IconSystem.fontFamily
+                font.pixelSize: 14
                 opacity: audioPill.exp ? 0 : 1
                 Behavior on opacity { NumberAnimation { duration: 130 } }
                 anchors.top: parent.top; anchors.topMargin: (34 - contentHeight) / 2
@@ -193,7 +198,10 @@ Item {
             onHoverExited:  root.pillExited()
 
             Text {
-                text: "\uF0CFF"; color: "#e0af68"; font.pixelSize: 14
+                text: Components.IconSystem.brightness.high
+                color: "#ffffff"
+                font.family: Components.IconSystem.fontFamily
+                font.pixelSize: 14
                 opacity: brilloPill.exp ? 0 : 1
                 Behavior on opacity { NumberAnimation { duration: 130 } }
                 anchors.top: parent.top; anchors.topMargin: (34 - contentHeight) / 2
@@ -233,8 +241,9 @@ Item {
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: root.porcentajeBateria >= 80 ? "\uF0E4D" : root.porcentajeBateria >= 50 ? "\uF0E4C" : root.porcentajeBateria >= 20 ? "\uF0E4A" : "\uF0E48"
-                    color: root.porcentajeBateria <= 15 ? "#f7768e" : "#9ece6a"
+                    text: root.porcentajeBateria >= 80 ? Components.IconSystem.battery.full : (root.porcentajeBateria >= 50 ? Components.IconSystem.battery.high : (root.porcentajeBateria >= 20 ? Components.IconSystem.battery.medium : (root.porcentajeBateria >= 5 ? Components.IconSystem.battery.low : Components.IconSystem.battery.critical)))
+                    color: "#ffffff"
+                    font.family: Components.IconSystem.fontFamily
                     font.pixelSize: 14
                 }
                 Text {
