@@ -117,6 +117,9 @@ QtObject {
         readonly property string snow: "\ue1b8"
         readonly property string thunder: "\ue1b2"
         readonly property string tornado: "\ue53c"
+        readonly property string thermometer: "\ue5c6"
+        readonly property string drop: "\ue210"
+        readonly property string wind: "\ue5d2"
     }
 
     readonly property QtObject colors: QtObject {

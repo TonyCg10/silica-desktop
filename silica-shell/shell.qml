@@ -9,6 +9,7 @@ ShellRoot {
 
     property string horaSistema: "--:--:--"
     property string fechaSistema: "-- --"
+    property string fechaLarga: "-- --"
     property int porcentajeBateria: 0
     property var workspaces: ({})
     property var workspacesPorMonitor: ({})
@@ -49,7 +50,8 @@ ShellRoot {
                     let datos = JSON.parse(line);
                     root.horaSistema       = datos.hora    ?? root.horaSistema;
                     root.porcentajeBateria = datos.bateria ?? root.porcentajeBateria;
-                    root.fechaSistema      = Qt.formatDateTime(new Date(), "ddd d 'de' MMM");
+                    root.fechaSistema      = new Date().toLocaleDateString(Qt.locale("es"), "ddd d 'de' MMM");
+                    root.fechaLarga        = new Date().toLocaleDateString(Qt.locale("es"), "dddd d 'de' MMMM MM 'de' yyyy");
 
                     if (datos.workspaces) {
                         if (JSON.stringify(datos.workspaces) !== JSON.stringify(root.workspaces)) {
@@ -89,6 +91,8 @@ ShellRoot {
 
     Timer { id: reconnectTimer; interval: 1000; onTriggered: silicaEngineSocket.connected = true }
 
+    // ... (Mantén todo el inicio igual hasta la declaración de Variants)
+
     Variants {
         model: Quickshell.screens
 
@@ -106,7 +110,9 @@ ShellRoot {
                 }
 
                 anchors.top: true; anchors.left: true; anchors.right: true
-                implicitHeight: Math.max(50, statusBar.height)
+                
+                // CRUCIAL: El Panel de Quickshell ahora crece si la isla se expande
+                implicitHeight: Math.max(50, statusBar.height, dynamicIsland.height + 12)
                 exclusionMode: ExclusionMode.Normal
                 exclusiveZone: 50
                 color: "transparent"
@@ -122,11 +128,17 @@ ShellRoot {
                 }
 
                 DynamicIsland {
+                    id: dynamicIsland // Añadimos ID para que el PanelWindow pueda leer su altura
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
-                    anchors.topMargin: (50 - height) / 2
+                    
+                    // Dejamos el margen superior fijo en 6px (50 - 38 / 2) para que al crecer 
+                    // se expanda hacia abajo de forma natural y limpia
+                    anchors.topMargin: 6
+                    
                     hora: root.horaSistema
                     fecha: root.fechaSistema
+                    fechaLarga: root.fechaLarga
                     ventanaTitulo: root.ventanaTitulo
                     ventanaClase: root.ventanaClase
                     ventanaIcono: root.ventanaIcono

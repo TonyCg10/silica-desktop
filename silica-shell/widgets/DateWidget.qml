@@ -2,8 +2,11 @@ import QtQuick
 
 Text {
     property string date
-    text: date
-    color: "#787c99"
-    font.pixelSize: 12
+    property string dateLong: ""
+    property bool expanded: false
+    text: expanded ? dateLong : date
+    color: "#ffffff"
+    font.bold: true
+    font.pixelSize: 14
     anchors.verticalCenter: parent.verticalCenter
 }

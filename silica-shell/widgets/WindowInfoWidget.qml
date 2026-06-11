@@ -11,6 +11,9 @@ Row {
     property int iconWidth: windowIconItem.status === Image.Ready ? 18 : fallbackIcon.implicitWidth
     spacing: 8
     opacity: isWindowVisible ? 1 : 0
+    
+    // Nueva propiedad para controlar el estado visual expandido
+    property bool expanded: false
 
     Behavior on opacity {
         NumberAnimation { duration: 200 }
@@ -54,11 +57,17 @@ Row {
         id: tituloText
         anchors.verticalCenter: parent.verticalCenter
         text: root.windowTitle.length > 0 ? root.windowTitle : root.windowClass
-        color: "#c0caf5"
-        font.pixelSize: 13
+        color: "#ffffff"
+        font.pixelSize: 14
         font.bold: true
         elide: Text.ElideRight
         font.capitalization: Font.AllLowercase
-        width: Math.min(implicitWidth, 280)
+        
+        // Al estar expandido permitimos que ocupe mucho más espacio antes de recortarse
+        width: Math.min(implicitWidth, root.expanded ? 480 : 280)
+        
+        Behavior on width {
+            NumberAnimation { duration: 350; easing.type: Easing.OutQuint }
+        }
     }
 }
