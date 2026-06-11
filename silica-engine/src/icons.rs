@@ -4,7 +4,9 @@ use std::fs;
 use std::path::Path;
 
 fn buscar_icono_en_dir(dir: &str, nombre: &str) -> Option<String> {
-    let sizes = ["scalable", "48x48", "64x64", "32x32", "24x24", "22x22", "16x16"];
+    let sizes = [
+        "scalable", "48x48", "64x64", "32x32", "24x24", "22x22", "16x16",
+    ];
     let exts = [".svg", ".png", ".xpm"];
 
     for size in &sizes {
@@ -89,6 +91,9 @@ fn resolver_ruta_icono(nombre: &str) -> String {
         format!("/usr/share/icons/{}", tema),
         format!("{}/.local/share/icons/hicolor", home),
         "/usr/share/icons/hicolor".to_string(),
+        // Rutas de exportación de Flatpak
+        format!("{}/.local/share/flatpak/exports/share/icons/hicolor", home),
+        "/var/lib/flatpak/exports/share/icons/hicolor".to_string(),
     ];
 
     for base in &data_dirs {
@@ -116,6 +121,12 @@ fn resolver_ruta_icono(nombre: &str) -> String {
                         let dirs = [
                             format!("{}/.local/share/icons/{}", home, padre),
                             format!("/usr/share/icons/{}", padre),
+                            // Rutas de herencia de Flatpak
+                            format!(
+                                "{}/.local/share/flatpak/exports/share/icons/{}",
+                                home, padre
+                            ),
+                            format!("/var/lib/flatpak/exports/share/icons/{}", padre),
                         ];
                         for base in &dirs {
                             if let Some(path) = buscar_icono_en_dir(&base, nombre) {
@@ -135,30 +146,75 @@ fn resolver_ruta_icono(nombre: &str) -> String {
     String::new()
 }
 
+fn extraer_icono_desde_contenido(contenido: &str) -> Option<String> {
+    for line in contenido.lines() {
+        let line = line.trim();
+        if let Some(valor) = line.strip_prefix("Icon=") {
+            let icono = valor.trim().to_string();
+            if icono.starts_with('/') {
+                return Some(icono);
+            }
+            let ruta = resolver_ruta_icono(&icono);
+            if !ruta.is_empty() {
+                return Some(ruta);
+            }
+            return Some(icono);
+        }
+    }
+    None
+}
+
 fn resolver_desde_desktop(clase: &str) -> String {
     let home = env::var("HOME").unwrap_or_default();
     let dirs = [
         "/usr/share/applications".to_string(),
         "/usr/local/share/applications".to_string(),
         format!("{}/.local/share/applications", home),
+        // Rutas de .desktop de Flatpak
+        format!("{}/.local/share/flatpak/exports/share/applications", home),
+        "/var/lib/flatpak/exports/share/applications".to_string(),
     ];
 
+    // 1. Try exact filename match
     for dir in &dirs {
         for variante in &[clase, &clase.to_lowercase()] {
             let desktop_path = format!("{}/{}.desktop", dir, variante);
             if let Ok(content) = fs::read_to_string(&desktop_path) {
-                for line in content.lines() {
-                    let line = line.trim();
-                    if let Some(valor) = line.strip_prefix("Icon=") {
-                        let icono = valor.trim().to_string();
-                        if icono.starts_with('/') {
+                if let Some(icono) = extraer_icono_desde_contenido(&content) {
+                    return icono;
+                }
+            }
+        }
+    }
+
+    // 2. Scan all .desktop files and match by StartupWMClass or file name
+    let clase_lower = clase.to_lowercase();
+    for dir in &dirs {
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|e| e.to_str()) != Some("desktop") {
+                    continue;
+                }
+                if let Ok(content) = fs::read_to_string(&path) {
+                    let tiene_wmclass = content.lines().any(|l| {
+                        let t = l.trim().to_lowercase();
+                        t.starts_with("startupwmclass=") && t.contains(&clase_lower)
+                    });
+                    if tiene_wmclass {
+                        if let Some(icono) = extraer_icono_desde_contenido(&content) {
                             return icono;
                         }
-                        let ruta = resolver_ruta_icono(&icono);
-                        if !ruta.is_empty() {
-                            return ruta;
+                    }
+                    let fname = path
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .map(|s| s.to_lowercase())
+                        .unwrap_or_default();
+                    if fname.contains(&clase_lower) || clase_lower.contains(&fname) {
+                        if let Some(icono) = extraer_icono_desde_contenido(&content) {
+                            return icono;
                         }
-                        return icono;
                     }
                 }
             }
@@ -173,67 +229,48 @@ pub fn resolver_icono(clase: &str) -> String {
         return String::new();
     }
 
-    let cls = clase.to_lowercase();
+    let cls = clase.to_lowercase().trim_start_matches('@').to_string();
 
+    // 1. PRIMERO: Buscar en los archivos .desktop
+    // Esto garantiza que aplicaciones de Flatpak (com.slack.Slack) o empaquetados no estándar (net.lutris.Lutris)
+    // lean el nombre correcto del icono desde su archivo original.
+    let icono_desktop = resolver_desde_desktop(&cls);
+    if !icono_desktop.is_empty() && icono_desktop.starts_with('/') {
+        return icono_desktop;
+    }
+
+    // 2. SEGUNDO: Usar la LUT como Fallback para las cosas rebeldes
     let lut: HashMap<&str, &str> = HashMap::from([
         ("firefox", "firefox"),
         ("firefox-esr", "firefox"),
         ("librewolf", "librewolf"),
         ("chromium", "chromium"),
-        ("chromium-browser", "chromium"),
         ("google-chrome", "google-chrome"),
-        ("brave-browser", "brave-browser"),
         ("kitty", "kitty"),
         ("alacritty", "alacritty"),
         ("foot", "foot"),
-        ("wezterm", "wezterm"),
         ("code", "code"),
-        ("code-oss", "code-oss"),
-        ("visual-studio-code", "visual-studio-code"),
         ("vscodium", "vscodium"),
+        ("codium", "vscodium"),
+        ("lutris", "net.lutris.Lutris"),
+        ("net.lutris.lutris", "net.lutris.Lutris"),
+        ("slack", "com.slack.Slack"),
+        ("opencode", "opencode"),
+        ("opencode-aidesktop", "opencode"),
+        ("code-oss", "com.visualstudio.code.oss"),
+        ("codeos", "com.visualstudio.code.oss"),
         ("thunar", "org.xfce.thunar"),
         ("nemo", "nemo"),
         ("dolphin", "org.kde.dolphin"),
-        ("nautilus", "org.gnome.Nautilus"),
         ("discord", "discord"),
-        ("vesktop", "vesktop"),
         ("spotify", "spotify"),
         ("steam", "steam"),
-        ("steam-native", "steam"),
         ("vlc", "vlc"),
-        ("mpv", "mpv"),
-        ("gimp", "gimp"),
         ("obsidian", "obsidian"),
-        ("thunderbird", "thunderbird"),
         ("mailspring", "mailspring"),
-        ("slack", "slack"),
-        ("telegram-desktop", "telegram"),
-        ("org.telegram.desktop", "telegram"),
-        ("signal", "signal-desktop"),
-        ("whatsapp", "whatsapp-nativefier"),
-        ("obs", "obs"),
-        ("krita", "krita"),
-        ("blender", "blender"),
-        ("inkscape", "inkscape"),
-        ("libreoffice", "libreoffice-startcenter"),
-        ("libreoffice-writer", "libreoffice-writer"),
-        ("libreoffice-calc", "libreoffice-calc"),
-        ("libreoffice-impress", "libreoffice-impress"),
-        ("evince", "org.gnome.Evince"),
-        ("zathura", "zathura"),
-        ("gparted", "gparted"),
-        ("virt-manager", "virt-manager"),
-        ("qbittorrent", "qbittorrent"),
-        ("transmission-gtk", "transmission-gtk"),
-        ("btop", "btop"),
-        ("htop", "htop"),
-        ("neovim", "nvim"),
-        ("nvim", "nvim"),
-        ("helix", "helix"),
-        ("lazygit", "lazygit"),
     ]);
 
-    // 1. Exact match en LUT
+    // Búsqueda exacta en LUT
     if let Some(&icono) = lut.get(cls.as_str()) {
         let ruta = resolver_ruta_icono(icono);
         if !ruta.is_empty() {
@@ -242,7 +279,7 @@ pub fn resolver_icono(clase: &str) -> String {
         return icono.to_string();
     }
 
-    // 2. Substring match en LUT
+    // Búsqueda parcial en LUT
     for (key, icono) in &lut {
         if cls.contains(key) {
             let ruta = resolver_ruta_icono(icono);
@@ -253,6 +290,12 @@ pub fn resolver_icono(clase: &str) -> String {
         }
     }
 
-    // 3. Buscar .desktop y resolver ruta
-    resolver_desde_desktop(&cls)
+    // 3. TERCERO: Fallback directo, por si el nombre de la clase ES el nombre del icono
+    let ruta_directa = resolver_ruta_icono(&cls);
+    if !ruta_directa.is_empty() {
+        return ruta_directa;
+    }
+
+    // Devolver el string que sacamos del desktop, aunque QML falle al renderizarlo, activará el FontAwesome de respaldo
+    icono_desktop
 }

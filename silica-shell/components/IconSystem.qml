@@ -93,10 +93,12 @@ QtObject {
         readonly property string chrome: "\ue976"
         readonly property string terminal: "\ue47e"
         readonly property string code: "\ue1bc"
+        readonly property string opencode: "\ue1bc"
         readonly property string folder: "\ue24a"
         readonly property string discord: "\ue61a"
         readonly property string spotify: "\ue66e"
         readonly property string steam: "\uead4"
+        readonly property string lutris: "\ue26e"
         readonly property string gamepad: "\ue26e"
         readonly property string video: "\ue4da"
         readonly property string image: "\ue2ca"
@@ -201,11 +203,13 @@ QtObject {
         if (cls.indexOf("firefox") !== -1) return app.firefox
         if (cls.indexOf("chromium") !== -1 || cls.indexOf("chrome") !== -1) return app.chrome
         if (cls.indexOf("kitty") !== -1 || cls.indexOf("alacritty") !== -1 || cls.indexOf("foot") !== -1 || cls.indexOf("terminal") !== -1) return app.terminal
+        if (cls.indexOf("opencode") !== -1) return app.opencode
         if (cls.indexOf("code") !== -1 || cls.indexOf("vscodium") !== -1) return app.code
         if (cls.indexOf("thunar") !== -1 || cls.indexOf("nemo") !== -1 || cls.indexOf("dolphin") !== -1 || cls.indexOf("nautilus") !== -1) return app.folder
         if (cls.indexOf("discord") !== -1) return app.discord
         if (cls.indexOf("spotify") !== -1) return app.spotify
         if (cls.indexOf("steam") !== -1) return app.steam
+        if (cls.indexOf("lutris") !== -1) return app.lutris
         if (cls.indexOf("game") !== -1) return app.gamepad
         if (cls.indexOf("vlc") !== -1 || cls.indexOf("mpv") !== -1) return app.video
         if (cls.indexOf("gimp") !== -1) return app.image
